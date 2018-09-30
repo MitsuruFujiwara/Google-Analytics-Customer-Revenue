@@ -38,7 +38,7 @@ if __name__ == '__main__':
         test_df = load_df(csv_path='../input/test.csv')
 
         save2pkl('../output/train_df.pkl', train_df)
-        save2pkl('../output/train_df.pkl', test_df)
+        save2pkl('../output/test_df.pkl', test_df)
 
     df = train_df.append(test_df)
     print(df.head(10))
