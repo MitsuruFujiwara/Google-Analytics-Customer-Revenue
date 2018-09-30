@@ -6,6 +6,8 @@ import numpy as np
 from multiprocessing import Pool
 from pandas.io.json import json_normalize
 from contextlib import contextmanager
+from Utils import save2pkl, loadpkl
+import os
 
 """
 特徴量抽出用のスクリプト
@@ -28,9 +30,15 @@ def load_df(csv_path, nrows=None):
     return df
 
 if __name__ == '__main__':
-    # test
-    train_df = load_df(csv_path='../input/train.csv')
-    test_df = load_df(csv_path='../input/test.csv')
+    if os.path.isfile('../output/train_df.pkl'):
+        train_df = loadpkl('../output/train_df.pkl')
+        test_df = loadpkl('../output/test_df.pkl')
+    else:
+        train_df = load_df(csv_path='../input/train.csv')
+        test_df = load_df(csv_path='../input/test.csv')
+
+        save2pkl('../output/train_df.pkl', train_df)
+        save2pkl('../output/train_df.pkl', test_df)
 
     df = train_df.append(test_df)
-    print(df)
+    print(df.head(10))

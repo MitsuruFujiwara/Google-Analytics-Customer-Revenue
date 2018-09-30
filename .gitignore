@@ -2,3 +2,6 @@
 /input
 /src/.ipynb_checkpoints/
 .DS_Store
+/sample_submission.csv.zip
+/test.csv.zip
+/train.csv.zip
