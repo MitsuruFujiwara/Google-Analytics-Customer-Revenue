@@ -6,3 +6,4 @@
 sample_submission.csv.zip
 test.csv.zip
 train.csv.zip
+/src/__pycache__/
