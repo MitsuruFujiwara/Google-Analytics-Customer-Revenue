@@ -2,6 +2,8 @@
 import pandas as pd
 import numpy as np
 import time
+import pickle
+from contextlib import contextmanager
 
 """
 Utility的なものを置いとくところ
@@ -34,3 +36,13 @@ def removeMissingVariables(data, threshold):
     col_missing = missing.index[missing > 0.75]
     col_missing = [column for column in col_missing if 'TARGET' not in column]
     return col_missing
+
+def save2pkl(path, df):
+    f = open(path, 'wb')
+    pickle.dump(df, f)
+    f.close
+
+def loadpkl(path):
+    f = open(path, 'rb')
+    out = pickle.load(f)
+    return out
