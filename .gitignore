@@ -3,3 +3,4 @@
 /src/.ipynb_checkpoints/
 .DS_Store
 /check
+/src/__pycache__/
