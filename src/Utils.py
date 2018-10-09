@@ -138,3 +138,14 @@ def load_df(csv_path, nrows=None):
         column_as_df.columns = [column+'.'+subcolumn for subcolumn in column_as_df.columns]
         df = df.drop(column, axis=1).merge(column_as_df, right_index=True, left_index=True)
     return df
+
+def line_notify(message):
+    f = open('../input/line_token.txt')
+    token = f.read()
+    f.close
+    line_notify_token = token.replace('\n', '')
+    line_notify_api = 'https://notify-api.line.me/api/notify'
+
+    payload = {'message': message}
+    headers = {'Authorization': 'Bearer ' + line_notify_token}  # 発行したトークン
+    line_notify = requests.post(line_notify_api, data=payload, headers=headers)
