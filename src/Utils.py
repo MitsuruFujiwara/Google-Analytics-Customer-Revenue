@@ -3,17 +3,93 @@ import pandas as pd
 import numpy as np
 import time
 import pickle
+import logging
+
+from multiprocessing import Pool as Pool
+
 from contextlib import contextmanager
 
 """
 Utility的なものを置いとくところ
 """
 
-@contextmanager
-def timer(title):
-    t0 = time.time()
-    yield
-    print("{} - done in {:.0f}s".format(title, time.time() - t0))
+KEYS_FOR_FIELD = {'device': [
+                        'browser',
+                        'browserSize',
+                        'browserVersion',
+                        'deviceCategory',
+                        'flashVersion',
+                        'isMobile',
+                        'language',
+                        'mobileDeviceBranding',
+                        'mobileDeviceInfo',
+                        'mobileDeviceMarketingName',
+                        'mobileDeviceModel',
+                        'mobileInputSelector',
+                        'operatingSystem',
+                        'operatingSystemVersion',
+                        'screenColors',
+                        'screenResolution'
+                        ],
+                  'geoNetwork': [
+                        'city',
+                        'cityId',
+                        'continent',
+                        'country',
+                        'latitude',
+                        'longitude',
+                        'metro',
+                        'networkDomain',
+                        'networkLocation',
+                        'region',
+                        'subContinent'
+                        ],
+                  'totals': [
+                        'bounces',
+                        'hits',
+                        'newVisits',
+                        'pageviews',
+                        'transactionRevenue',
+                        'visits'
+                        ],
+                  'trafficSource': [
+                        'adContent',
+                        'adwordsClickInfo',
+                        'campaign',
+                        'campaignCode',
+                        'isTrueDirect',
+                        'keyword',
+                        'medium',
+                        'referralPath',
+                        'source'
+                        ],
+                        }
+
+EXCLUDED_FEATURES = ['date', 'fullVisitorId', 'sessionId', 'totals.transactionRevenue',
+                     'visitId', 'visitStartTime', 'vis_date', 'nb_sessions', 'max_visits']
+
+def apply_func_on_series(data=None, func=None):
+    return data.apply(lambda x: func(x))
+
+def multi_apply_func_on_series(df=None, func=None, n_jobs=4):
+    p = Pool(n_jobs)
+    f_ = p.map(functools.partial(apply_func_on_series, func=func),
+               np.array_split(df, n_jobs))
+    f_ = pd.concat(f_, axis=0, ignore_index=True)
+    p.close()
+    p.join()
+    return f_.values
+
+def convert_to_dict(x):
+    return eval(x.replace('false', 'False')
+                .replace('true', 'True')
+                .replace('null', 'np.nan'))
+
+def get_dict_field(x_, key_):
+    try:
+        return x_[key_]
+    except KeyError:
+        return np.nan
 
 # One-hot encoding for categorical columns with get_dummies
 def one_hot_encoder(df, nan_as_category = True):
@@ -46,3 +122,19 @@ def loadpkl(path):
     f = open(path, 'rb')
     out = pickle.load(f)
     return out
+
+# 拾い物 https://www.kaggle.com/julian3833/1-quick-start-read-csv-and-flatten-json-fields/notebook
+def load_df(csv_path, nrows=None):
+
+    JSON_COLUMNS = ['device', 'geoNetwork', 'totals', 'trafficSource']
+
+    df = pd.read_csv(csv_path,
+                     converters={column: json.loads for column in JSON_COLUMNS},
+                     dtype={'fullVisitorId': 'str'}, # Important!!
+                     nrows=nrows)
+
+    for column in JSON_COLUMNS:
+        column_as_df = json_normalize(df[column])
+        column_as_df.columns = [column+'.'+subcolumn for subcolumn in column_as_df.columns]
+        df = df.drop(column, axis=1).merge(column_as_df, right_index=True, left_index=True)
+    return df
