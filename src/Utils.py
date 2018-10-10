@@ -9,6 +9,8 @@ import logging
 from pandas.io.json import json_normalize
 from multiprocessing import Pool as Pool
 from contextlib import contextmanager
+import requests
+import functools
 
 """
 Utility的なものを置いとくところ
