@@ -76,7 +76,6 @@ def get_df(num_rows=None):
     df["totals.transactionRevenue"] = df["totals.transactionRevenue"].fillna(0.0)
 
     df = df[cat_cols+num_cols+['IS_TEST']]
-    print(df.columns)
     return df, cat_cols
 
 if __name__ == '__main__':
