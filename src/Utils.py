@@ -1,12 +1,13 @@
 
+import json
 import pandas as pd
 import numpy as np
 import time
 import pickle
 import logging
 
+from pandas.io.json import json_normalize
 from multiprocessing import Pool as Pool
-
 from contextlib import contextmanager
 
 """
@@ -65,9 +66,9 @@ KEYS_FOR_FIELD = {'device': [
                         ],
                         }
 
-EXCLUDED_FEATURES = ['date', 'fullVisitorId', 'sessionId', 'totals.transactionRevenue',
-                     'visitId', 'visitStartTime', 'vis_date', 'nb_sessions', 'max_visits']
-
+EXCLUDED_FEATURES = ["visitNumber", "date", "fullVisitorId", "sessionId", "visitId",
+                     "visitStartTime", 'index', 'IS_TEST']
+                     
 def apply_func_on_series(data=None, func=None):
     return data.apply(lambda x: func(x))
 
