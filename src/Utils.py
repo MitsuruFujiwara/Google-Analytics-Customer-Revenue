@@ -12,9 +12,9 @@ from contextlib import contextmanager
 import requests
 import functools
 
-"""
+'''
 Utility的なものを置いとくところ
-"""
+'''
 
 KEYS_FOR_FIELD = {'device': [
                         'browser',
@@ -68,9 +68,8 @@ KEYS_FOR_FIELD = {'device': [
                         ],
                         }
 
-EXCLUDED_FEATURES = ["visitNumber", "date", "fullVisitorId", "sessionId", "visitId",
-                     "visitStartTime", 'index', 'IS_TEST']
-                     
+EXCLUDED_FEATURES = ['date', 'fullVisitorId', 'sessionId', 'visitId', 'index', 'IS_TEST']
+
 def apply_func_on_series(data=None, func=None):
     return data.apply(lambda x: func(x))
 

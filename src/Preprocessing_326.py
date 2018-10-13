@@ -21,7 +21,11 @@ def get_df(num_rows=None):
     del train_df, test_df
     gc.collect()
 
-    # TODO: ここから下にFeature Engineeringの処理追加していく感じで
+    # 不要カラムを抽出
+    for col in df.columns:
+        if len(df[col].value_counts()) == 1:
+            EXCLUDED_FEATURES.append(col)
+
 
     df['vis_date'] = pd.to_datetime(df['visitStartTime'], unit='s')
     df['sess_date_dow'] = df['vis_date'].dt.dayofweek
@@ -34,7 +38,7 @@ def get_df(num_rows=None):
     df['next_session_2'] = (
         df['vis_date'] - df[['fullVisitorId', 'vis_date']].groupby('fullVisitorId')['vis_date'].shift(-1)
     ).astype(np.int64) // 1e9 // 60 // 60
-    
+
 #     df['max_visits'] = df['fullVisitorId'].map(
 #         df[['fullVisitorId', 'visitNumber']].groupby('fullVisitorId')['visitNumber'].max()
 #     )
@@ -43,16 +47,12 @@ def get_df(num_rows=None):
     df['nb_pageviews'] = df['date'].map(
         df[['date', 'totals.pageviews']].groupby('date')['totals.pageviews'].sum()
     )
-    
+
     df['ratio_pageviews'] = df['totals.pageviews'] / df['nb_pageviews']
 
     # とりあえず最低限必要な処理のみ
 
     # 使用しないカラムを定義
-    constant_columns = []
-    for col in df.columns:
-        if len(df[col].value_counts()) == 1:
-            constant_columns.append(col)
 
     # categorical featuresの処理
     cat_cols = [c for c in df.columns if not c.startswith("total")]
