@@ -13,7 +13,7 @@ import seaborn as sns
 import warnings
 import os
 
-from Preprocessing_dmi import get_df
+from Preprocessing_dmi import get_df_2
 from Utils import EXCLUDED_FEATURES
 
 ################################################################################
@@ -75,16 +75,16 @@ def kfold_lightgbm(df, cat_cols, num_folds, stratified = False, debug= False):
         # set data structure
         lgb_train = lgb.Dataset(train_x,
                                 label=train_y,
-#                                categorical_feature=cat_cols,
+                                categorical_feature=cat_cols,
                                 free_raw_data=False)
         lgb_test = lgb.Dataset(valid_x,
                                label=valid_y,
-#                               categorical_feature=cat_cols,
+                               categorical_feature=cat_cols,
                                free_raw_data=False)
 
         # パラメータは適当です
         params ={
-                'device' : 'gpu',
+#                'device' : 'gpu',
 #                'gpu_use_dp':True,
                 'task': 'train',
                 'boosting': 'gbdt',
@@ -147,7 +147,7 @@ def kfold_lightgbm(df, cat_cols, num_folds, stratified = False, debug= False):
 def main(debug = False):
     num_rows = 10000 if debug else None
     with timer("Preprocessing"):
-        df, cat = get_df(num_rows)
+        df, cat = get_df_2(num_rows)
         print("df shape:", df.shape)
     with timer("Run LightGBM with kfold"):
         feat_importance = kfold_lightgbm(df, cat_cols=cat, num_folds=5, stratified=False, debug=debug)
