@@ -3,7 +3,7 @@ import gc
 import numpy as np
 
 from sklearn.preprocessing import LabelEncoder
-from Utils import load_df, EXCLUDED_FEATURES
+from Utils import load_df, EXCLUDED_FEATURES, one_hot_encoder
 
 def get_df(num_rows=None):
     # load datasets
@@ -26,7 +26,19 @@ def get_df(num_rows=None):
         if len(df[col].value_counts()) == 1:
             EXCLUDED_FEATURES.append(col)
 
+    # numeric columnsの抽出
+    num_cols = [c for c in df.columns if c.startswith("total") and c not in EXCLUDED_FEATURES]
 
+    # numeric columnsを数値型へ変換
+    df[num_cols] = df[num_cols].astype(float)
+
+    # fillna
+    df[num_cols] = df[num_cols].fillna(0)
+
+    # categorical columnsの処理
+    df, cat_cols = one_hot_encoder(df, nan_as_category=True)
+
+    """
     df['vis_date'] = pd.to_datetime(df['visitStartTime'], unit='s')
     df['sess_date_dow'] = df['vis_date'].dt.dayofweek
     df['sess_date_hours'] = df['vis_date'].dt.hour
@@ -38,48 +50,23 @@ def get_df(num_rows=None):
     df['next_session_2'] = (
         df['vis_date'] - df[['fullVisitorId', 'vis_date']].groupby('fullVisitorId')['vis_date'].shift(-1)
     ).astype(np.int64) // 1e9 // 60 // 60
-
+    """
 #     df['max_visits'] = df['fullVisitorId'].map(
 #         df[['fullVisitorId', 'visitNumber']].groupby('fullVisitorId')['visitNumber'].max()
 #     )
-
+    """
     df.loc[:,'totals.pageviews'] = df.loc[:,'totals.pageviews'].astype('float64')
     df['nb_pageviews'] = df['date'].map(
         df[['date', 'totals.pageviews']].groupby('date')['totals.pageviews'].sum()
     )
 
     df['ratio_pageviews'] = df['totals.pageviews'] / df['nb_pageviews']
-
-    # とりあえず最低限必要な処理のみ
-
-    # 使用しないカラムを定義
-
-    # categorical featuresの処理
-    cat_cols = [c for c in df.columns if not c.startswith("total")]
-    cat_cols = [c for c in cat_cols if c not in constant_columns + EXCLUDED_FEATURES]
-
-    # cat colsはとりあえずlabel encodingのみ
-    for c in cat_cols:
-        le = LabelEncoder()
-        df_vals = list(df[c].values.astype(str))
-        le.fit(df_vals)
-        df[c] = le.transform(df_vals)
-
-    # numeric featuresの処理
-    num_cols = [c for c in df.columns if c.startswith("total")]
-    num_cols = [c for c in num_cols if c not in constant_columns + EXCLUDED_FEATURES]
-
-    # 数値型へ変換
-    df[num_cols] = df[num_cols].astype(float)
-
-    # target変数をfillnaしておきます
-    df["totals.transactionRevenue"] = df["totals.transactionRevenue"].fillna(0.0)
+    """
 
     df = df[cat_cols+num_cols+['IS_TEST']]
-    return df, cat_cols
+    return df
 
 if __name__ == '__main__':
     # test
-    df, cat = get_df(num_rows=10000)
-    df.to_csv("df_test.csv")
+    df = get_df(num_rows=10000)
     print(df)
