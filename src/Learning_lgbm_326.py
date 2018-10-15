@@ -14,7 +14,7 @@ import warnings
 import os
 
 from Preprocessing_326 import get_df
-from Utils import EXCLUDED_FEATURES
+from Utils import EXCLUDED_FEATURES, line_notify
 
 ################################################################################
 # Kuso-simple LightGBM k-fold
@@ -126,19 +126,22 @@ def kfold_lightgbm(df, num_folds, stratified = False, debug= False):
         del reg, train_x, train_y, valid_x, valid_y
         gc.collect()
 
-    print('Full RMSE score %.6f' % np.sqrt(mean_squared_error(np.log1p(train_df['totals.transactionRevenue']), np.log1p(oof_preds))))
+    msg = 'Full RMSE score %.6f' % np.sqrt(mean_squared_error(np.log1p(train_df['totals.transactionRevenue']), np.log1p(oof_preds)))
+    print(msg)
+    line_notify(msg)
 
     if not debug:
         # 提出データの予測値を保存
-        test_df['PredictedLogRevenue'] = sub_preds
+        test_df.loc[:,'PredictedLogRevenue'] = sub_preds
         submission = test_df.groupby('fullVisitorId').agg({'PredictedLogRevenue' : 'sum'}).reset_index()
         submission['PredictedLogRevenue'] = np.log1p(submission['PredictedLogRevenue'])
         submission['PredictedLogRevenue'] =  submission['PredictedLogRevenue'].apply(lambda x : 0.0 if x < 0 else x)
+        submission['PredictedLogRevenue'] = submission['PredictedLogRevenue'].fillna(0)
         submission.to_csv(submission_file_name, index=False)
 
         # out of foldの予測値を保存
         train_df['OOF_PRED'] = oof_preds
-        train_df[['SK_ID_CURR', 'OOF_PRED']].to_csv(oof_file_name, index= False)
+        train_df[['fullVisitorId', 'OOF_PRED']].to_csv(oof_file_name, index= False)
 
     return feature_importance_df
 

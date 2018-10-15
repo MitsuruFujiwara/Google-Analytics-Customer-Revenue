@@ -76,7 +76,7 @@ def get_df(num_rows=None):
     df['ratio_pageviews'] = df['totals.pageviews'] / df['nb_pageviews']
     """
 
-    df = df[cat_cols+num_cols+['IS_TEST']]
+#    df = df[cat_cols+num_cols+['IS_TEST']]
     return df
 
 if __name__ == '__main__':
