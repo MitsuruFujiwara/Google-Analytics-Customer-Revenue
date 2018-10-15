@@ -45,7 +45,7 @@ def display_importances(feature_importance_df_, outputpath, csv_outputpath):
     plt.savefig(outputpath)
 
 # LightGBM GBDT with KFold or Stratified KFold
-def kfold_lightgbm(df, cat_cols, num_folds, stratified = False, debug= False):
+def kfold_lightgbm(df, num_folds, stratified = False, debug= False):
 
     # Divide in training/validation and test data
     train_df = df[~df['IS_TEST']]
@@ -75,11 +75,9 @@ def kfold_lightgbm(df, cat_cols, num_folds, stratified = False, debug= False):
         # set data structure
         lgb_train = lgb.Dataset(train_x,
                                 label=train_y,
-#                                categorical_feature=cat_cols,
                                 free_raw_data=False)
         lgb_test = lgb.Dataset(valid_x,
                                label=valid_y,
-#                               categorical_feature=cat_cols,
                                free_raw_data=False)
 
         # パラメータは適当です
@@ -147,14 +145,14 @@ def kfold_lightgbm(df, cat_cols, num_folds, stratified = False, debug= False):
 def main(debug = False):
     num_rows = 10000 if debug else None
     with timer("Preprocessing"):
-        df, cat = get_df(num_rows)
+        df = get_df(num_rows)
         print("df shape:", df.shape)
     with timer("Run LightGBM with kfold"):
-        feat_importance = kfold_lightgbm(df, cat_cols=cat, num_folds=5, stratified=False, debug=debug)
+        feat_importance = kfold_lightgbm(df, num_folds=5, stratified=False, debug=debug)
         display_importances(feat_importance ,'../output/lgbm_importances.png', '../output/feature_importance_lgbm.csv')
 
 if __name__ == "__main__":
     submission_file_name = "../output/submission.csv"
     oof_file_name = "../output/oof_lgbm.csv"
     with timer("Full model run"):
-        main(debug = True)
+        main(debug = False)

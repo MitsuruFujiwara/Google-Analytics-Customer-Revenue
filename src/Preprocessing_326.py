@@ -5,6 +5,12 @@ import numpy as np
 from sklearn.preprocessing import LabelEncoder
 from Utils import load_df, EXCLUDED_FEATURES, one_hot_encoder
 
+# columns毎にtarget encodingを適用する関数
+def targetEncoding(df, col, target='TARGET_BIN'):
+    dict_for_map = df[~df['IS_TEST']].fillna(-1).groupby(col)[target].mean()
+    res = df[col].fillna(-1).map(dict_for_map)
+    return res
+
 def get_df(num_rows=None):
     # load datasets
     train_df = load_df('../input/train.csv', nrows=num_rows)
@@ -26,6 +32,16 @@ def get_df(num_rows=None):
         if len(df[col].value_counts()) == 1:
             EXCLUDED_FEATURES.append(col)
 
+    # categorical featuresの処理
+    cat_cols = [c for c in df.columns if not c.startswith("total") and c not in EXCLUDED_FEATURES]
+
+    # target encoding用のラベルを生成
+    df['TARGET_BIN'] = df['totals.transactionRevenue'].notnull()*1
+
+    # target encoding
+    for c in cat_cols:
+        df[c] = targetEncoding(df, c, target='TARGET_BIN')
+
     # numeric columnsの抽出
     num_cols = [c for c in df.columns if c.startswith("total") and c not in EXCLUDED_FEATURES]
 
@@ -34,9 +50,6 @@ def get_df(num_rows=None):
 
     # fillna
     df[num_cols] = df[num_cols].fillna(0)
-
-    # categorical columnsの処理
-    df, cat_cols = one_hot_encoder(df, nan_as_category=True)
 
     """
     df['vis_date'] = pd.to_datetime(df['visitStartTime'], unit='s')
