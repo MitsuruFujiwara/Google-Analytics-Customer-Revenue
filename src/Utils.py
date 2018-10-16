@@ -1,4 +1,5 @@
 
+import os
 import json
 import pandas as pd
 import numpy as np
@@ -6,6 +7,7 @@ import time
 import pickle
 import logging
 
+from time import time, sleep
 from pandas.io.json import json_normalize
 from multiprocessing import Pool as Pool
 from contextlib import contextmanager
@@ -16,6 +18,8 @@ import gc
 '''
 Utility的なものを置いとくところ
 '''
+
+COMPETITION_NAME = 'ga-customer-revenue-prediction'
 
 KEYS_FOR_FIELD = {'device': [
                         'browser',
@@ -142,6 +146,7 @@ def load_df(csv_path, nrows=None):
                      nrows=nrows)
 
     for column in JSON_COLUMNS:
+        print("json columns: {}".format(column))
         column_as_df = json_normalize(df[column])
         column_as_df.columns = [column+'.'+subcolumn for subcolumn in column_as_df.columns]
         df = df.drop(column, axis=1).merge(column_as_df, right_index=True, left_index=True)
@@ -157,6 +162,18 @@ def line_notify(message):
     payload = {'message': message}
     headers = {'Authorization': 'Bearer ' + line_notify_token}  # 発行したトークン
     line_notify = requests.post(line_notify_api, data=payload, headers=headers)
+
+# API経由でsubmitする機能 https://github.com/KazukiOnodera/Home-Credit-Default-Risk/blob/master/py/utils.py
+def submit(file_path, comment='from API'):
+    os.system('kaggle competitions submit -c {} -f {} -m "{}"'.format(COMPETITION_NAME,file_path,comment))
+    sleep(60) # tekito~~~~
+    tmp = os.popen('kaggle competitions submissions -c {} -v | head -n 2'.format(COMPETITION_NAME)).read()
+    col, values = tmp.strip().split('\n')
+    message = 'SCORE!!!\n'
+    for i,j in zip(col.split(','), values.split(',')):
+        message += f'{i}: {j}\n'
+#        print(f'{i}: {j}') # TODO: comment out later?
+    line_notify(message.rstrip())
 
 def develop_json_fields(df=None):
     json_fields = ['device', 'geoNetwork', 'totals', 'trafficSource']

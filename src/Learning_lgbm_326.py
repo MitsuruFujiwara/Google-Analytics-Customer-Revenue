@@ -14,7 +14,7 @@ import warnings
 import os
 
 from Preprocessing_326 import get_df
-from Utils import EXCLUDED_FEATURES, line_notify
+from Utils import EXCLUDED_FEATURES, line_notify, submit
 
 ################################################################################
 # Kuso-simple LightGBM k-fold
@@ -126,9 +126,10 @@ def kfold_lightgbm(df, num_folds, stratified = False, debug= False):
         del reg, train_x, train_y, valid_x, valid_y
         gc.collect()
 
-    msg = 'Full RMSE score %.6f' % np.sqrt(mean_squared_error(np.log1p(train_df['totals.transactionRevenue']), np.log1p(oof_preds)))
-    print(msg)
-    line_notify(msg)
+    # Full RMSEスコアの表示&LINE通知
+    full_rmse = np.sqrt(mean_squared_error(np.log1p(train_df['totals.transactionRevenue']), np.log1p(oof_preds)))
+    print('Full RMSE score %.6f' % full_rmse)
+    line_notify('Full RMSE score %.6f' % full_rmse)
 
     if not debug:
         # 提出データの予測値を保存
@@ -142,6 +143,9 @@ def kfold_lightgbm(df, num_folds, stratified = False, debug= False):
         # out of foldの予測値を保存
         train_df['OOF_PRED'] = oof_preds
         train_df[['fullVisitorId', 'OOF_PRED']].to_csv(oof_file_name, index= False)
+
+        # API経由でsubmit
+        submit(submission_file_name, comment='cv: %.6f' % full_rmse)
 
     return feature_importance_df
 

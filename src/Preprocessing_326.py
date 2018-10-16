@@ -12,6 +12,7 @@ def targetEncoding(df, col, target='TARGET_BIN'):
     return res
 
 def get_df(num_rows=None):
+    print("Loading datasets...")
     # load datasets
     train_df = load_df('../input/train.csv', nrows=num_rows)
     test_df = load_df('../input/test.csv', nrows=num_rows)
@@ -40,6 +41,7 @@ def get_df(num_rows=None):
 
     # target encoding
     for c in cat_cols:
+        print(c)
         df[c] = targetEncoding(df, c, target='TARGET_BIN')
 
     # numeric columnsの抽出
