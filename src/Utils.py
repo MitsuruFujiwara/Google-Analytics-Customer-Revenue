@@ -171,7 +171,7 @@ def submit(file_path, comment='from API'):
     col, values = tmp.strip().split('\n')
     message = 'SCORE!!!\n'
     for i,j in zip(col.split(','), values.split(',')):
-        message += f'{i}: {j}\n'
+        message += '{}: {}\n'.format(i,j)
 #        print(f'{i}: {j}') # TODO: comment out later?
     line_notify(message.rstrip())
 
