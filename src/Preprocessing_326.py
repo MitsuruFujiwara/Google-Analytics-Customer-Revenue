@@ -33,8 +33,15 @@ def get_df(num_rows=None):
         if len(df[col].value_counts()) == 1:
             EXCLUDED_FEATURES.append(col)
 
+    # 季節性変数の処理
+    df['vis_date'] = pd.to_datetime(df['visitStartTime'], unit='s')
+    df['sess_date_dow'] = df['vis_date'].dt.dayofweek
+    df['sess_date_hours'] = df['vis_date'].dt.hour
+    df['sess_date_dom'] = df['vis_date'].dt.day
+
     # categorical featuresの処理
     cat_cols = [c for c in df.columns if not c.startswith("total") and c not in EXCLUDED_FEATURES]
+    cat_cols = cat_cols + ['sess_date_dow', 'sess_date_hours', 'sess_date_dom']
 
     # target encoding用のラベルを生成
     df['TARGET_BIN'] = df['totals.transactionRevenue'].notnull()*1
@@ -54,10 +61,6 @@ def get_df(num_rows=None):
     df[num_cols] = df[num_cols].fillna(0)
 
     """
-    df['vis_date'] = pd.to_datetime(df['visitStartTime'], unit='s')
-    df['sess_date_dow'] = df['vis_date'].dt.dayofweek
-    df['sess_date_hours'] = df['vis_date'].dt.hour
-    df['sess_date_dom'] = df['vis_date'].dt.day
     df.sort_values(['fullVisitorId', 'vis_date'], ascending=True, inplace=True)
     df['next_session_1'] = (
         df['vis_date'] - df[['fullVisitorId', 'vis_date']].groupby('fullVisitorId')['vis_date'].shift(1)

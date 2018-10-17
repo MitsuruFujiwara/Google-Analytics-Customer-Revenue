@@ -74,7 +74,7 @@ KEYS_FOR_FIELD = {'device': [
                         }
 
 EXCLUDED_FEATURES = ["visitNumber", "date", "fullVisitorId", "sessionId", "visitId",
-                     "visitStartTime", 'index', 'IS_TEST', 'TARGET_BIN']
+                     "visitStartTime", 'index', 'IS_TEST', 'TARGET_BIN', 'vis_date']
 excluded_features_v2 = [
     'date', 'fullVisitorId', 'sessionId', 'totals.transactionRevenue',
     'visitId', 'visitStartTime', 'vis_date', 'nb_sessions', 'max_visits'
