@@ -48,7 +48,7 @@ def get_df(num_rows=None):
 
     # target encoding
     for c in cat_cols:
-        print(c)
+        print("target encoding: {}".format(c))
         df[c] = targetEncoding(df, c, target='TARGET_BIN')
 
     # numeric columnsの抽出
@@ -60,14 +60,18 @@ def get_df(num_rows=None):
     # fillna
     df[num_cols] = df[num_cols].fillna(0)
 
-    """
-    df.sort_values(['fullVisitorId', 'vis_date'], ascending=True, inplace=True)
+    # 前回訪問時からの経過時間
     df['next_session_1'] = (
         df['vis_date'] - df[['fullVisitorId', 'vis_date']].groupby('fullVisitorId')['vis_date'].shift(1)
     ).astype(np.int64) // 1e9 // 60 // 60
+
+    # 初回訪問時からの経過時間
     df['next_session_2'] = (
         df['vis_date'] - df[['fullVisitorId', 'vis_date']].groupby('fullVisitorId')['vis_date'].shift(-1)
     ).astype(np.int64) // 1e9 // 60 // 60
+
+    """
+    df.sort_values(['fullVisitorId', 'vis_date'], ascending=True, inplace=True)
     """
 #     df['max_visits'] = df['fullVisitorId'].map(
 #         df[['fullVisitorId', 'visitNumber']].groupby('fullVisitorId')['visitNumber'].max()

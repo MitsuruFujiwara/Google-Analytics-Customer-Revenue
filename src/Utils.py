@@ -146,7 +146,7 @@ def load_df(csv_path, nrows=None):
                      nrows=nrows)
 
     for column in JSON_COLUMNS:
-        print("json columns: {}".format(column))
+        print("json columns {} done.".format(column))
         column_as_df = json_normalize(df[column])
         column_as_df.columns = [column+'.'+subcolumn for subcolumn in column_as_df.columns]
         df = df.drop(column, axis=1).merge(column_as_df, right_index=True, left_index=True)
