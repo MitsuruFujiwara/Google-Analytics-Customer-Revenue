@@ -22,6 +22,20 @@ def get_df(num_rows=None):
     train_df['IS_TEST'] = False
     test_df['IS_TEST'] = True
 
+    # leak dataの取得
+    train_store_1 = pd.read_csv('../input/Train_external_data.csv',
+                                low_memory=False, skiprows=6, dtype={"Client Id":'str'})
+    train_store_2 = pd.read_csv('../input/Train_external_data_2.csv',
+                                low_memory=False, skiprows=6, dtype={"Client Id":'str'})
+    test_store_1 = pd.read_csv('../input/Test_external_data.csv',
+                                low_memory=False, skiprows=6, dtype={"Client Id":'str'})
+    test_store_2 = pd.read_csv('../input/Test_external_data_2.csv',
+                                low_memory=False, skiprows=6, dtype={"Client Id":'str'})
+
+    #
+    for df in [train_store_1, train_store_2, test_store_1, test_store_2]:
+        df["visitId"] = df["Client Id"].apply(lambda x: x.split('.', 1)[1]).astype(np.int64)
+
     # Merge
     df = train_df.append(test_df).reset_index()
 
