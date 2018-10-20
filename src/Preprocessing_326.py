@@ -70,13 +70,39 @@ def get_df(num_rows=None):
 
     # 季節性変数の処理
     df['vis_date'] = pd.to_datetime(df['visitStartTime'], unit='s')
-    df['sess_date_dow'] = df['vis_date'].dt.dayofweek
-    df['sess_date_hours'] = df['vis_date'].dt.hour
-    df['sess_date_dom'] = df['vis_date'].dt.day
+    df['dayofweek'] = df['vis_date'].dt.dayofweek
+    df['hour'] = df['vis_date'].dt.hour
+    df['day'] = df['vis_date'].dt.day
+    df['month'] = df['vis_date'].dt.month
+    df['weekday'] = df['vis_date'].dt.weekday
+    df['time'] = df['vis_date'].dt.second + df['vis_date'].dt.minute*60 + df['vis_date'].dt.hour*3600
+
+    # remember these features were equal, but not always? May be it means something...
+    df["id_incoherence"] = pd.to_datetime(df.visitId, unit='s') != df['vis_date']
+    # remember visitId dublicates?
+    df["visitId_dublicates"] = df.visitId.map(df.visitId.value_counts())
+    # remember session dublicates?
+    df["session_dublicates"] = df.sessionId.map(df.sessionId.value_counts())
+
+    # paired categories
+    df['source.country'] = df['trafficSource.source'] + '_' + df['geoNetwork.country']
+    df['campaign.medium'] = df['trafficSource.campaign'] + '_' + df['trafficSource.medium']
+    df['browser.category'] = df['device.browser'] + '_' + df['device.deviceCategory']
+    df['browser.os'] = df['device.browser'] + '_' + df['device.operatingSystem']
+
+    df['device_deviceCategory_channelGrouping'] = df['device.deviceCategory'] + "_" + df['channelGrouping']
+    df['channelGrouping_browser'] = df['device.browser'] + "_" + df['channelGrouping']
+    df['channelGrouping_OS'] = df['device.operatingSystem'] + "_" + df['channelGrouping']
+
+    for i in ['geoNetwork.city', 'geoNetwork.continent', 'geoNetwork.country','geoNetwork.metro', 'geoNetwork.networkDomain', 'geoNetwork.region','geoNetwork.subContinent']:
+        for j in ['device.browser','device.deviceCategory', 'device.operatingSystem', 'trafficSource.source']:
+            df[i + "_" + j] = df[i] + "_" + df[j]
+
+    df['content.source'] = df['trafficSource.adContent'].astype(str) + "_" + df['source.country']
+    df['medium.source'] = df['trafficSource.medium'] + "_" + df['source.country']
 
     # categorical featuresの処理
-    cat_cols = [c for c in df.columns if not c.startswith("total") and c not in EXCLUDED_FEATURES+leak_cols]
-    cat_cols = cat_cols + ['sess_date_dow', 'sess_date_hours', 'sess_date_dom']
+    cat_cols = [c for c in df.columns if not c.startswith("total") and c not in EXCLUDED_FEATURES+leak_cols+['time']]
 
     # target encoding用のラベルを生成
     df['TARGET_BIN'] = df['totals.transactionRevenue'].notnull()*1
@@ -88,7 +114,7 @@ def get_df(num_rows=None):
 
     # numeric columnsの抽出
     num_cols = [c for c in df.columns if c.startswith("total") and c not in EXCLUDED_FEATURES+leak_cols]
-    num_cols = num_cols+["Revenue"]
+    num_cols = num_cols+["Revenue", 'time', "Avg. Session Duration", "Bounce Rate", "Goal Conversion Rate"]
 
     # numeric columnsを数値型へ変換
     df[num_cols] = df[num_cols].astype(float)
@@ -96,15 +122,13 @@ def get_df(num_rows=None):
     # fillna
     df[num_cols] = df[num_cols].fillna(0)
 
-    # 前回訪問時からの経過時間
-    df['next_session_1'] = (
-        df['vis_date'] - df[['fullVisitorId', 'vis_date']].groupby('fullVisitorId')['vis_date'].shift(1)
-    ).astype(np.int64) // 1e9 // 60 // 60
-
-    # 初回訪問時からの経過時間
-    df['next_session_2'] = (
-        df['vis_date'] - df[['fullVisitorId', 'vis_date']].groupby('fullVisitorId')['vis_date'].shift(-1)
-    ).astype(np.int64) // 1e9 // 60 // 60
+    # future features
+    df.sort_values(['fullVisitorId', 'date'], ascending=True, inplace=True)
+    df['prev_session'] = (df['vis_date'] - df[['fullVisitorId', 'vis_date']].groupby('fullVisitorId')['vis_date'].shift(1)
+                            ).astype(np.int64) // 1e9 // 60 // 60
+    df['next_session'] = (df['vis_date'] - df[['fullVisitorId', 'vis_date']].groupby('fullVisitorId')['vis_date'].shift(-1)
+                            ).astype(np.int64) // 1e9 // 60 // 60
+    df.sort_index(inplace=True)
 
     """
     df.sort_values(['fullVisitorId', 'vis_date'], ascending=True, inplace=True)
