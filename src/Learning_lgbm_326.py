@@ -128,7 +128,6 @@ def kfold_lightgbm(df, num_folds, stratified = False, debug= False):
 
     # Full RMSEスコアの表示&LINE通知
     full_rmse = np.sqrt(mean_squared_error(np.log1p(train_df['totals.transactionRevenue']), np.log1p(oof_preds)))
-    print('Full RMSE score %.6f' % full_rmse)
     line_notify('Full RMSE score %.6f' % full_rmse)
 
     if not debug:

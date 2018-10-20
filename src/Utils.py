@@ -162,6 +162,7 @@ def line_notify(message):
     payload = {'message': message}
     headers = {'Authorization': 'Bearer ' + line_notify_token}  # 発行したトークン
     line_notify = requests.post(line_notify_api, data=payload, headers=headers)
+    print(message)
 
 # API経由でsubmitする機能 https://github.com/KazukiOnodera/Home-Credit-Default-Risk/blob/master/py/utils.py
 def submit(file_path, comment='from API'):

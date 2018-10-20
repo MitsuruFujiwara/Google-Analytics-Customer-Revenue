@@ -32,12 +32,33 @@ def get_df(num_rows=None):
     test_store_2 = pd.read_csv('../input/Test_external_data_2.csv',
                                 low_memory=False, skiprows=6, dtype={"Client Id":'str'})
 
-    #
+    leak_cols = train_store_1.columns.tolist()
+
+    # Getting VisitId from Google Analytics...
     for df in [train_store_1, train_store_2, test_store_1, test_store_2]:
         df["visitId"] = df["Client Id"].apply(lambda x: x.split('.', 1)[1]).astype(np.int64)
 
+    # Merge with train/test data
+    train_df = train_df.merge(pd.concat([train_store_1, train_store_2], sort=False), how="left", on="visitId")
+    test_df = test_df.merge(pd.concat([test_store_1, test_store_2], sort=False), how="left", on="visitId")
+
     # Merge
     df = train_df.append(test_df).reset_index()
+
+    # Cleaning Revenue
+    df["Revenue"].fillna('$', inplace=True)
+    df["Revenue"] = df["Revenue"].apply(lambda x: x.replace('$', '').replace(',', ''))
+    df["Revenue"] = pd.to_numeric(df["Revenue"], errors="coerce")
+    df[leak_cols] = df[leak_cols].fillna(0.0)
+
+    # Clearing leaked data:
+    df["Avg. Session Duration"][df["Avg. Session Duration"] == 0] = "00:00:00"
+    df["Avg. Session Duration"] = df["Avg. Session Duration"].str.split(':').apply(lambda x: int(x[0]) * 60 + int(x[1]))
+    df["Bounce Rate"] = df["Bounce Rate"].astype(str).apply(lambda x: x.replace('%', '')).astype(float)
+    df["Goal Conversion Rate"] = df["Goal Conversion Rate"].astype(str).apply(lambda x: x.replace('%', '')).astype(float)
+
+    # drop Client Id
+    df.drop("Client Id", 1, inplace=True)
 
     del train_df, test_df
     gc.collect()
@@ -54,7 +75,7 @@ def get_df(num_rows=None):
     df['sess_date_dom'] = df['vis_date'].dt.day
 
     # categorical featuresの処理
-    cat_cols = [c for c in df.columns if not c.startswith("total") and c not in EXCLUDED_FEATURES]
+    cat_cols = [c for c in df.columns if not c.startswith("total") and c not in EXCLUDED_FEATURES+leak_cols]
     cat_cols = cat_cols + ['sess_date_dow', 'sess_date_hours', 'sess_date_dom']
 
     # target encoding用のラベルを生成
@@ -66,7 +87,8 @@ def get_df(num_rows=None):
         df[c] = targetEncoding(df, c, target='TARGET_BIN')
 
     # numeric columnsの抽出
-    num_cols = [c for c in df.columns if c.startswith("total") and c not in EXCLUDED_FEATURES]
+    num_cols = [c for c in df.columns if c.startswith("total") and c not in EXCLUDED_FEATURES+leak_cols]
+    num_cols = num_cols+["Revenue"]
 
     # numeric columnsを数値型へ変換
     df[num_cols] = df[num_cols].astype(float)
