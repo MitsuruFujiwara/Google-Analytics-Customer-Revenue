@@ -88,8 +88,8 @@ def kfold_lightgbm(df, num_folds, stratified = False, debug= False):
                 'boosting': 'gbdt',
                 'objective': 'regression',
                 'metric': 'rmse',
-                'num_iteration': 1000,
-                'learning_rate': 0.03,
+                'num_iteration': 10000,
+                'learning_rate': 0.02,
                 'num_leaves': 31,
                 'colsample_bytree': 0.9,
                 'subsample': 0.9,
@@ -110,7 +110,7 @@ def kfold_lightgbm(df, num_folds, stratified = False, debug= False):
                         lgb_train,
                         valid_sets=[lgb_train, lgb_test],
                         valid_names=['train', 'test'],
-                        early_stopping_rounds= 50,
+                        early_stopping_rounds= 200,
                         verbose_eval=100
                         )
 

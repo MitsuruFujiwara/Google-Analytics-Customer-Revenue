@@ -101,17 +101,6 @@ def get_df(num_rows=None):
     df['content.source'] = df['trafficSource.adContent'].astype(str) + "_" + df['source.country']
     df['medium.source'] = df['trafficSource.medium'] + "_" + df['source.country']
 
-    # User-aggregating features
-    df[["totals.hits", "totals.pageviews", "visitNumber"]] = df[["totals.hits", "totals.pageviews", "visitNumber"]].fillna(0)
-    df[["totals.hits", "totals.pageviews", "visitNumber"]] = df[["totals.hits", "totals.pageviews", "visitNumber"]].astype(int)
-    for feature in ["totals.hits", "totals.pageviews"]:
-        info = df.groupby("fullVisitorId")[feature].mean()
-        df["usermean_" + feature] = df.fullVisitorId.map(info)
-
-    for feature in ["visitNumber"]:
-        info = df.groupby("fullVisitorId")[feature].max()
-        df["usermax_" + feature] = df.fullVisitorId.map(info)
-
     # categorical featuresの処理
     cat_cols = [c for c in df.columns if not c.startswith("total") and c not in EXCLUDED_FEATURES+leak_cols+['time']]
 
@@ -140,6 +129,17 @@ def get_df(num_rows=None):
     df['next_session'] = (df['vis_date'] - df[['fullVisitorId', 'vis_date']].groupby('fullVisitorId')['vis_date'].shift(-1)
                             ).astype(np.int64) // 1e9 // 60 // 60
     df.sort_index(inplace=True)
+
+    # User-aggregating features
+    df[["totals.hits", "totals.pageviews", "visitNumber"]] = df[["totals.hits", "totals.pageviews", "visitNumber"]].fillna(0)
+    df[["totals.hits", "totals.pageviews", "visitNumber"]] = df[["totals.hits", "totals.pageviews", "visitNumber"]].astype(int)
+    for feature in ["totals.hits", "totals.pageviews"]:
+        info = df.groupby("fullVisitorId")[feature].mean()
+        df["usermean_" + feature] = df.fullVisitorId.map(info)
+
+    for feature in ["visitNumber"]:
+        info = df.groupby("fullVisitorId")[feature].max()
+        df["usermax_" + feature] = df.fullVisitorId.map(info)
 
     """
     df.sort_values(['fullVisitorId', 'vis_date'], ascending=True, inplace=True)
