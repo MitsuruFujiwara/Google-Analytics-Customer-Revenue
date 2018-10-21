@@ -154,7 +154,7 @@ def main(debug = False):
         df = get_df(num_rows)
         print("df shape:", df.shape)
     with timer("Run LightGBM with kfold"):
-        feat_importance = kfold_lightgbm(df, num_folds=5, stratified=False, debug=debug)
+        feat_importance = kfold_lightgbm(df, num_folds=10, stratified=False, debug=debug)
         display_importances(feat_importance ,'../output/lgbm_importances.png', '../output/feature_importance_lgbm.csv')
 
 if __name__ == "__main__":
