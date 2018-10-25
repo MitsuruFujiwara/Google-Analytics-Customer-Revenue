@@ -38,6 +38,11 @@ def get_df(num_rows=None):
     for df in [train_store_1, train_store_2, test_store_1, test_store_2]:
         df["visitId"] = df["Client Id"].apply(lambda x: x.split('.', 1)[1]).astype(np.int64)
 
+    # 外れ値の処理
+    train_df.loc[:,'totals.transactionRevenue'] = train_df['totals.transactionRevenue'].astype(float)
+    threshold = train_df['totals.transactionRevenue'].mean() + train_df['totals.transactionRevenue'].std()*2
+    train_df = train_df[train_df['totals.transactionRevenue'] < threshold]
+
     # Merge with train/test data
     train_df = train_df.merge(pd.concat([train_store_1, train_store_2], sort=False), how="left", on="visitId")
     test_df = test_df.merge(pd.concat([test_store_1, test_store_2], sort=False), how="left", on="visitId")
