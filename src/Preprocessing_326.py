@@ -40,7 +40,7 @@ def get_df(num_rows=None):
 
     # 外れ値の処理
     train_df.loc[:,'totals.transactionRevenue'] = train_df['totals.transactionRevenue'].astype(float)
-    threshold = train_df['totals.transactionRevenue'].mean() + train_df['totals.transactionRevenue'].std()*2
+    threshold = train_df['totals.transactionRevenue'].mean() + train_df['totals.transactionRevenue'].std()*3
     train_df = train_df[train_df['totals.transactionRevenue'] < threshold]
 
     # Merge with train/test data
