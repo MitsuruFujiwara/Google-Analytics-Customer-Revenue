@@ -39,7 +39,7 @@ def get_df(num_rows=None):
         df["visitId"] = df["Client Id"].apply(lambda x: x.split('.', 1)[1]).astype(np.int64)
 
     # 外れ値の処理
-    train_df.loc[:,'totals.transactionRevenue'] = train_df['totals.transactionRevenue'].astype(float)
+    train_df.loc[:,'totals.transactionRevenue'] = train_df['totals.transactionRevenue'].astype(float).fillna(0)
     threshold = train_df['totals.transactionRevenue'].mean() + train_df['totals.transactionRevenue'].std()*3
     train_df = train_df[train_df['totals.transactionRevenue'] < threshold]
 
@@ -80,7 +80,7 @@ def get_df(num_rows=None):
     df['day'] = df['vis_date'].dt.day
     df['month'] = df['vis_date'].dt.month
     df['weekday'] = df['vis_date'].dt.weekday
-    df['time'] = df['vis_date'].dt.second + df['vis_date'].dt.minute*60 + df['vis_date'].dt.hour*3600
+#    df['time'] = df['vis_date'].dt.second + df['vis_date'].dt.minute*60 + df['vis_date'].dt.hour*3600
 
     # remember these features were equal, but not always? May be it means something...
     df["id_incoherence"] = pd.to_datetime(df.visitId, unit='s') != df['vis_date']
@@ -119,7 +119,7 @@ def get_df(num_rows=None):
 
     # numeric columnsの抽出
     num_cols = [c for c in df.columns if c.startswith("total") and c not in EXCLUDED_FEATURES+leak_cols]
-    num_cols = num_cols+["Revenue", 'time', "Avg. Session Duration", "Bounce Rate", "Goal Conversion Rate"]
+    num_cols = num_cols+["Revenue", "Avg. Session Duration", "Bounce Rate", "Goal Conversion Rate"]
 
     # numeric columnsを数値型へ変換
     df[num_cols] = df[num_cols].astype(float)
