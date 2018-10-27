@@ -40,7 +40,10 @@ def get_df(num_rows=None):
 
     # 外れ値の処理
     train_df.loc[:,'totals.transactionRevenue'] = train_df['totals.transactionRevenue'].astype(float).fillna(0)
-    threshold = train_df['totals.transactionRevenue'].mean() + train_df['totals.transactionRevenue'].std()*3
+    mean = train_df[train_df['totals.transactionRevenue']>0]['totals.transactionRevenue'].mean()
+    std = train_df[train_df['totals.transactionRevenue']>0]['totals.transactionRevenue'].std()
+    threshold =  mean + std*2
+    print("mean: {}, std: {}, threshold: {}".format(mean, std, threshold))
     train_df = train_df[train_df['totals.transactionRevenue'] < threshold]
 
     # Merge with train/test data
@@ -57,10 +60,10 @@ def get_df(num_rows=None):
     df[leak_cols] = df[leak_cols].fillna(0.0)
 
     # Clearing leaked data:
-    df["Avg. Session Duration"][df["Avg. Session Duration"] == 0] = "00:00:00"
-    df["Avg. Session Duration"] = df["Avg. Session Duration"].str.split(':').apply(lambda x: int(x[0]) * 60 + int(x[1]))
-    df["Bounce Rate"] = df["Bounce Rate"].astype(str).apply(lambda x: x.replace('%', '')).astype(float)
-    df["Goal Conversion Rate"] = df["Goal Conversion Rate"].astype(str).apply(lambda x: x.replace('%', '')).astype(float)
+    df[df["Avg. Session Duration"] == 0]["Avg. Session Duration"] = "00:00:00"
+    df.loc[:,"Avg. Session Duration"] = df["Avg. Session Duration"].str.split(':').apply(lambda x: int(x[0]) * 60 + int(x[1]))
+    df.loc[:,"Bounce Rate"] = df["Bounce Rate"].astype(str).apply(lambda x: x.replace('%', '')).astype(float)
+    df.loc[:,"Goal Conversion Rate"] = df["Goal Conversion Rate"].astype(str).apply(lambda x: x.replace('%', '')).astype(float)
 
     # drop Client Id
     df.drop("Client Id", 1, inplace=True)
