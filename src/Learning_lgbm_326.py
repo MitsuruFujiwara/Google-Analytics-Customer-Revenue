@@ -7,7 +7,7 @@ import time
 
 from contextlib import contextmanager
 from sklearn.metrics import mean_squared_error
-from sklearn.model_selection import KFold, StratifiedKFold
+from sklearn.model_selection import GroupKFold
 import matplotlib.pyplot as plt
 import seaborn as sns
 import warnings
@@ -28,6 +28,26 @@ def timer(title):
     t0 = time.time()
     yield
     print("{} - done in {:.0f}s".format(title, time.time() - t0))
+
+# Define folding strategy¶
+def get_folds(df=None, n_splits=5):
+    """Returns dataframe indices corresponding to Visitors Group KFold"""
+    # Get sorted unique visitors
+    unique_vis = np.array(sorted(df['fullVisitorId'].unique()))
+
+    # Get folds
+    folds = GroupKFold(n_splits=n_splits)
+    fold_ids = []
+    ids = np.arange(df.shape[0])
+    for trn_vis, val_vis in folds.split(X=unique_vis, y=unique_vis, groups=unique_vis):
+        fold_ids.append(
+            [
+                ids[df['fullVisitorId'].isin(unique_vis[trn_vis])],
+                ids[df['fullVisitorId'].isin(unique_vis[val_vis])]
+            ]
+        )
+
+    return fold_ids
 
 # Display/plot feature importance
 def display_importances(feature_importance_df_, outputpath, csv_outputpath):
@@ -56,10 +76,7 @@ def kfold_lightgbm(df, num_folds, stratified = False, debug= False):
     gc.collect()
 
     # Cross validation model
-    if stratified:
-        folds = StratifiedKFold(n_splits= num_folds, shuffle=True, random_state=47)
-    else:
-        folds = KFold(n_splits= num_folds, shuffle=True, random_state=47)
+    folds = get_folds(df=train_df, n_splits=num_folds)
 
     # Create arrays and dataframes to store results
     oof_preds = np.zeros(train_df.shape[0])
@@ -68,7 +85,7 @@ def kfold_lightgbm(df, num_folds, stratified = False, debug= False):
     feats = [f for f in train_df.columns if f not in EXCLUDED_FEATURES+['totals.transactionRevenue']]
 
     # k-fold
-    for n_fold, (train_idx, valid_idx) in enumerate(folds.split(train_df[feats], train_df['totals.transactionRevenue'])):
+    for n_fold, (train_idx, valid_idx) in enumerate(folds):
         train_x, train_y = train_df[feats].iloc[train_idx], np.log1p(train_df['totals.transactionRevenue'].iloc[train_idx])
         valid_x, valid_y = train_df[feats].iloc[valid_idx], np.log1p(train_df['totals.transactionRevenue'].iloc[valid_idx])
 
@@ -115,7 +132,7 @@ def kfold_lightgbm(df, num_folds, stratified = False, debug= False):
                         )
 
         oof_preds[valid_idx] = np.expm1(reg.predict(valid_x, num_iteration=reg.best_iteration))
-        sub_preds += np.expm1(reg.predict(test_df[feats], num_iteration=reg.best_iteration)) / folds.n_splits
+        sub_preds += np.expm1(reg.predict(test_df[feats], num_iteration=reg.best_iteration)) / num_folds
 
         fold_importance_df = pd.DataFrame()
         fold_importance_df["feature"] = feats

@@ -22,22 +22,6 @@ def get_df(num_rows=None):
     train_df['IS_TEST'] = False
     test_df['IS_TEST'] = True
 
-    # leak dataの取得
-    train_store_1 = pd.read_csv('../input/Train_external_data.csv',
-                                low_memory=False, skiprows=6, dtype={"Client Id":'str'})
-    train_store_2 = pd.read_csv('../input/Train_external_data_2.csv',
-                                low_memory=False, skiprows=6, dtype={"Client Id":'str'})
-    test_store_1 = pd.read_csv('../input/Test_external_data.csv',
-                                low_memory=False, skiprows=6, dtype={"Client Id":'str'})
-    test_store_2 = pd.read_csv('../input/Test_external_data_2.csv',
-                                low_memory=False, skiprows=6, dtype={"Client Id":'str'})
-
-    leak_cols = train_store_1.columns.tolist()
-
-    # Getting VisitId from Google Analytics...
-    for df in [train_store_1, train_store_2, test_store_1, test_store_2]:
-        df["visitId"] = df["Client Id"].apply(lambda x: x.split('.', 1)[1]).astype(np.int64)
-
     # 外れ値の処理
     train_df.loc[:,'totals.transactionRevenue'] = train_df['totals.transactionRevenue'].astype(float).fillna(0)
     mean = train_df[train_df['totals.transactionRevenue']>0]['totals.transactionRevenue'].mean()
@@ -46,27 +30,8 @@ def get_df(num_rows=None):
     print("mean: {}, std: {}, threshold: {}".format(mean, std, threshold))
     train_df = train_df[train_df['totals.transactionRevenue'] < threshold]
 
-    # Merge with train/test data
-    train_df = train_df.merge(pd.concat([train_store_1, train_store_2], sort=False), how="left", on="visitId")
-    test_df = test_df.merge(pd.concat([test_store_1, test_store_2], sort=False), how="left", on="visitId")
-
     # Merge
     df = train_df.append(test_df).reset_index()
-
-    # Cleaning Revenue
-    df["Revenue"].fillna('$', inplace=True)
-    df["Revenue"] = df["Revenue"].apply(lambda x: x.replace('$', '').replace(',', ''))
-    df["Revenue"] = pd.to_numeric(df["Revenue"], errors="coerce")
-    df[leak_cols] = df[leak_cols].fillna(0.0)
-
-    # Clearing leaked data:
-    df[df["Avg. Session Duration"] == 0]["Avg. Session Duration"] = "00:00:00"
-    df.loc[:,"Avg. Session Duration"] = df["Avg. Session Duration"].str.split(':').apply(lambda x: int(x[0]) * 60 + int(x[1]))
-    df.loc[:,"Bounce Rate"] = df["Bounce Rate"].astype(str).apply(lambda x: x.replace('%', '')).astype(float)
-    df.loc[:,"Goal Conversion Rate"] = df["Goal Conversion Rate"].astype(str).apply(lambda x: x.replace('%', '')).astype(float)
-
-    # drop Client Id
-    df.drop("Client Id", 1, inplace=True)
 
     del train_df, test_df
     gc.collect()
@@ -82,7 +47,6 @@ def get_df(num_rows=None):
     df['hour'] = df['vis_date'].dt.hour
     df['day'] = df['vis_date'].dt.day
     df['month'] = df['vis_date'].dt.month
-    df['weekday'] = df['vis_date'].dt.weekday
 #    df['time'] = df['vis_date'].dt.second + df['vis_date'].dt.minute*60 + df['vis_date'].dt.hour*3600
 
     # remember these features were equal, but not always? May be it means something...
@@ -110,7 +74,7 @@ def get_df(num_rows=None):
     df['medium.source'] = df['trafficSource.medium'] + "_" + df['source.country']
 
     # categorical featuresの処理
-    cat_cols = [c for c in df.columns if not c.startswith("total") and c not in EXCLUDED_FEATURES+leak_cols+['time']]
+    cat_cols = [c for c in df.columns if not c.startswith("total") and c not in EXCLUDED_FEATURES+['time']]
 
     # target encoding用のラベルを生成
     df['TARGET_BIN'] = df['totals.transactionRevenue'].notnull()*1
@@ -121,8 +85,7 @@ def get_df(num_rows=None):
         df[c] = targetEncoding(df, c, target='TARGET_BIN')
 
     # numeric columnsの抽出
-    num_cols = [c for c in df.columns if c.startswith("total") and c not in EXCLUDED_FEATURES+leak_cols]
-    num_cols = num_cols+["Revenue", "Avg. Session Duration", "Bounce Rate", "Goal Conversion Rate"]
+    num_cols = [c for c in df.columns if c.startswith("total") and c not in EXCLUDED_FEATURES]
 
     # numeric columnsを数値型へ変換
     df[num_cols] = df[num_cols].astype(float)
