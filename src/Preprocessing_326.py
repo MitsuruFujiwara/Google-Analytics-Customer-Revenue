@@ -23,12 +23,12 @@ def get_df(num_rows=None):
     test_df['IS_TEST'] = True
 
     # 外れ値の処理
-    train_df.loc[:,'totals.transactionRevenue'] = train_df['totals.transactionRevenue'].astype(float).fillna(0)
-    mean = train_df[train_df['totals.transactionRevenue']>0]['totals.transactionRevenue'].mean()
-    std = train_df[train_df['totals.transactionRevenue']>0]['totals.transactionRevenue'].std()
-    threshold =  mean + std*2
-    print("mean: {}, std: {}, threshold: {}".format(mean, std, threshold))
-    train_df = train_df[train_df['totals.transactionRevenue'] < threshold]
+#    train_df.loc[:,'totals.transactionRevenue'] = train_df['totals.transactionRevenue'].astype(float).fillna(0)
+#    mean = train_df[train_df['totals.transactionRevenue']>0]['totals.transactionRevenue'].mean()
+#    std = train_df[train_df['totals.transactionRevenue']>0]['totals.transactionRevenue'].std()
+#    threshold =  mean + std*2
+#    print("mean: {}, std: {}, threshold: {}".format(mean, std, threshold))
+#    train_df = train_df[train_df['totals.transactionRevenue'] < threshold]
 
     # Merge
     df = train_df.append(test_df).reset_index()
@@ -112,22 +112,11 @@ def get_df(num_rows=None):
         info = df.groupby("fullVisitorId")[feature].max()
         df["usermax_" + feature] = df.fullVisitorId.map(info)
 
-    """
-    df.sort_values(['fullVisitorId', 'vis_date'], ascending=True, inplace=True)
-    """
-#     df['max_visits'] = df['fullVisitorId'].map(
-#         df[['fullVisitorId', 'visitNumber']].groupby('fullVisitorId')['visitNumber'].max()
-#     )
-    """
+    #当日のpv数と全体に占める割合の特徴量
     df.loc[:,'totals.pageviews'] = df.loc[:,'totals.pageviews'].astype('float64')
-    df['nb_pageviews'] = df['date'].map(
-        df[['date', 'totals.pageviews']].groupby('date')['totals.pageviews'].sum()
-    )
-
+    df['nb_pageviews'] = df['date'].map(df[['date', 'totals.pageviews']].groupby('date')['totals.pageviews'].sum())
     df['ratio_pageviews'] = df['totals.pageviews'] / df['nb_pageviews']
-    """
 
-#    df = df[cat_cols+num_cols+['IS_TEST']]
     return df
 
 if __name__ == '__main__':
