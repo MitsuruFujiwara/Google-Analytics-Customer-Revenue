@@ -117,6 +117,11 @@ def get_df(num_rows=None):
     df['nb_pageviews'] = df['date'].map(df[['date', 'totals.pageviews']].groupby('date')['totals.pageviews'].sum())
     df['ratio_pageviews'] = df['totals.pageviews'] / df['nb_pageviews']
 
+    #当日のhit数と全体に占める割合の特徴量
+    df.loc[:,'totals.hits'] = df.loc[:,'totals.hits'].astype('float64')
+    df['nb_hits'] = df['date'].map(df[['date', 'totals.hits']].groupby('date')['totals.hits'].sum())
+    df['ratio_hits'] = df['totals.hits'] / df['nb_hits']
+
     return df
 
 if __name__ == '__main__':
