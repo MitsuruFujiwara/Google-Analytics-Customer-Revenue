@@ -43,11 +43,20 @@ def get_df(num_rows=None):
 
     # 季節性変数の処理
     df['vis_date'] = pd.to_datetime(df['visitStartTime'], unit='s')
-    df['dayofweek'] = df['vis_date'].dt.dayofweek
     df['hour'] = df['vis_date'].dt.hour
     df['day'] = df['vis_date'].dt.day
+    df['weekday'] = df['vis_date'].dt.weekday
     df['month'] = df['vis_date'].dt.month
-#    df['time'] = df['vis_date'].dt.second + df['vis_date'].dt.minute*60 + df['vis_date'].dt.hour*3600
+    df['weekofyear'] = df['vis_date'].dt.weekofyear
+
+    df['hour_day'], _ = pd.factorize(df['hour'].astype(str)+'_'+df['day'].astype(str))
+    df['hour_weekday'], _ = pd.factorize(df['hour'].astype(str)+'_'+df['weekday'].astype(str))
+    df['hour_month'], _ = pd.factorize(df['hour'].astype(str)+'_'+df['month'].astype(str))
+    df['hour_weekofyear'], _ = pd.factorize(df['hour'].astype(str)+'_'+df['weekofyear'].astype(str))
+    df['day_weekday'], _ = pd.factorize(df['day'].astype(str)+'_'+df['weekday'].astype(str))
+    df['day_month'], _ = pd.factorize(df['day'].astype(str)+'_'+df['month'].astype(str))
+    df['day_weekofyear'], _ = pd.factorize(df['day'].astype(str)+'_'+df['weekofyear'].astype(str))
+    df['weekday_month'], _ = pd.factorize(df['weekday'].astype(str)+'_'+df['month'].astype(str))
 
     # remember these features were equal, but not always? May be it means something...
     df["id_incoherence"] = pd.to_datetime(df.visitId, unit='s') != df['vis_date']
