@@ -121,15 +121,20 @@ def get_df(num_rows=None):
         info = df.groupby("fullVisitorId")[feature].max()
         df["usermax_" + feature] = df.fullVisitorId.map(info)
 
-    #当日のpv数と全体に占める割合の特徴量
+    #当日のhit数が全体に占める割合
+    df.loc[:,'totals.hits'] = df.loc[:,'totals.hits'].astype('float64')
+    df['nb_hits'] = df['date'].map(df[['date', 'totals.hits']].groupby('date')['totals.hits'].sum())
+    df['ratio_hits'] = df['totals.hits'] / df['nb_hits']
+
+    #当日のpv数が全体に占める割合
     df.loc[:,'totals.pageviews'] = df.loc[:,'totals.pageviews'].astype('float64')
     df['nb_pageviews'] = df['date'].map(df[['date', 'totals.pageviews']].groupby('date')['totals.pageviews'].sum())
     df['ratio_pageviews'] = df['totals.pageviews'] / df['nb_pageviews']
 
-    #当日のhit数と全体に占める割合の特徴量
-    df.loc[:,'totals.hits'] = df.loc[:,'totals.hits'].astype('float64')
-    df['nb_hits'] = df['date'].map(df[['date', 'totals.hits']].groupby('date')['totals.hits'].sum())
-    df['ratio_hits'] = df['totals.hits'] / df['nb_hits']
+    # 当日のvisit number数が全体に占める割合
+    df.loc[:,'visitNumber'] = df.loc[:,'visitNumber'].astype('float64')
+    df['nb_visitNumber'] = df['date'].map(df[['date', 'visitNumber']].groupby('date')['visitNumber'].sum())
+    df['ratio_visitNumber'] = df['visitNumber'] / df['nb_visitNumber']
 
     return df
 

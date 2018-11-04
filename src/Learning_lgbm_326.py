@@ -4,17 +4,18 @@ import numpy as np
 import pandas as pd
 import gc
 import time
-
-from contextlib import contextmanager
-from sklearn.metrics import mean_squared_error
-from sklearn.model_selection import GroupKFold
 import matplotlib.pyplot as plt
 import seaborn as sns
 import warnings
 import os
 
+from contextlib import contextmanager
+from sklearn.metrics import mean_squared_error
+from sklearn.model_selection import GroupKFold
+from pandas.core.common import SettingWithCopyWarning
+
 from Preprocessing_326 import get_df
-from Utils import EXCLUDED_FEATURES, line_notify, submit
+from Utils import EXCLUDED_FEATURES, line_notify, submit, NUM_FOLDS
 
 ################################################################################
 # Kuso-simple LightGBM k-fold
@@ -171,7 +172,7 @@ def main(debug = False):
         df = get_df(num_rows)
         print("df shape:", df.shape)
     with timer("Run LightGBM with kfold"):
-        feat_importance = kfold_lightgbm(df, num_folds=5, stratified=False, debug=debug)
+        feat_importance = kfold_lightgbm(df, num_folds=NUM_FOLDS, stratified=False, debug=debug)
         display_importances(feat_importance ,'../output/lgbm_importances.png', '../output/feature_importance_lgbm.csv')
 
 if __name__ == "__main__":
