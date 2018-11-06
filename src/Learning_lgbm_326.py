@@ -150,7 +150,7 @@ def kfold_lightgbm(df, num_folds, stratified = False, debug= False):
 
     # Full RMSEスコアの表示&LINE通知
     full_rmse_session = np.sqrt(mean_squared_error(np.log1p(train_df['totals.transactionRevenue']), np.log1p(oof_preds_session)))
-#    line_notify('Session Level Full RMSE score %.6f' % full_rmse_session)
+    line_notify('Session Level Full RMSE score %.6f' % full_rmse_session)
 
     # session level feature importance
     display_importances(feature_importance_df ,
@@ -174,6 +174,9 @@ def kfold_lightgbm(df, num_folds, stratified = False, debug= False):
 
     train_df_agg.columns = pd.Index([e[0] + "_" + e[1].upper() for e in train_df_agg.columns.tolist()])
     test_df_agg.columns = pd.Index([e[0] + "_" + e[1].upper() for e in test_df_agg.columns.tolist()])
+
+    del oof_preds_session, sub_preds_session, train_df, test_df
+    gc.collect()
 
     # Cross validation model
     folds_agg = get_folds(df=train_df_agg[['totals.pageviews_MEAN']].reset_index(), n_splits=num_folds)
