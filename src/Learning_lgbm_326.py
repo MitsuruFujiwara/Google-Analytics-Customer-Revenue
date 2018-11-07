@@ -15,7 +15,8 @@ from sklearn.model_selection import GroupKFold
 from pandas.core.common import SettingWithCopyWarning
 
 from Preprocessing_326 import get_df
-from Utils import EXCLUDED_FEATURES, line_notify, submit, NUM_FOLDS
+from Utils import loadpkl, save2pkl, line_notify, submit
+from Utils import EXCLUDED_FEATURES, NUM_FOLDS
 
 ################################################################################
 # Kuso-simple LightGBM k-fold
@@ -66,7 +67,7 @@ def display_importances(feature_importance_df_, outputpath, csv_outputpath):
     plt.savefig(outputpath)
 
 # LightGBM GBDT with KFold or Stratified KFold
-def kfold_lightgbm(df, num_folds, stratified = False, debug= False):
+def kfold_lightgbm(df, num_folds, stratified = False, debug= False, use_pkl=False):
 
     # Divide in training/validation and test data
     train_df = df[~df['IS_TEST']]
@@ -157,12 +158,17 @@ def kfold_lightgbm(df, num_folds, stratified = False, debug= False):
                         '../output/lgbm_importances_session.png',
                         '../output/feature_importance_lgbm_session.csv')
 
+    # 予測値を保存
+    train_df['predictions'] = oof_preds_session
+    test_df['predictions'] = sub_preds_session
+
+    # csv形式でsave
+    train_df['predictions'].to_csv("../output/oof_lgbm_session.csv")
+    test_df['predictions'].to_csv("../output/sub_lgbm_session.csv")
+
     ############################################################################
     # User Level predictions
     ############################################################################
-
-    train_df['predictions'] = oof_preds_session
-    test_df['predictions'] = sub_preds_session
 
     # Aggregate data at User level
     aggregations = {'totals.transactionRevenue': ['sum']}
@@ -273,13 +279,14 @@ def kfold_lightgbm(df, num_folds, stratified = False, debug= False):
 
     return feature_importance_df
 
-def main(debug = False):
+def main(debug = False, use_pkl=False):
     num_rows = 10000 if debug else None
     with timer("Preprocessing"):
-        df = get_df(num_rows)
+        df = get_df(num_rows) if not use_pkl else loadpkl('../output/df_session.pkl')
+        save2pkl('../output/df_session.pkl', df)
         print("df shape:", df.shape)
     with timer("Run LightGBM with kfold"):
-        kfold_lightgbm(df, num_folds=NUM_FOLDS, stratified=False, debug=debug)
+        kfold_lightgbm(df, num_folds=NUM_FOLDS, stratified=False, debug=debug, use_pkl=use_pkl)
 
 if __name__ == "__main__":
     submission_file_name = "../output/submission.csv"
