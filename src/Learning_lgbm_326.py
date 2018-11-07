@@ -166,7 +166,7 @@ def kfold_lightgbm(df, num_folds, stratified = False, debug= False):
 
     # Aggregate data at User level
     aggregations = {'totals.transactionRevenue': ['sum']}
-    for col in feats+['totals.transactionRevenue']:
+    for col in feats:
         aggregations[col] = ['sum', 'max', 'min', 'mean', 'median', 'std']
 
     train_df_agg = train_df[feats+['fullVisitorId','totals.transactionRevenue']].groupby('fullVisitorId').agg(aggregations)
