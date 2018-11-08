@@ -172,11 +172,11 @@ def kfold_lightgbm(df, num_folds, stratified = False, debug= False, use_pkl=Fals
 
     # Aggregate data at User level
     aggregations = {'totals.transactionRevenue': ['sum']}
-    for col in feats:
+    for col in feats+['predictions']:
         aggregations[col] = ['sum', 'max', 'min', 'mean', 'median', 'std']
 
-    train_df_agg = train_df[feats+['fullVisitorId','totals.transactionRevenue']].groupby('fullVisitorId').agg(aggregations)
-    test_df_agg = test_df[feats + ['fullVisitorId','totals.transactionRevenue']].groupby('fullVisitorId').agg(aggregations)
+    train_df_agg = train_df[feats+['fullVisitorId','totals.transactionRevenue', 'predictions']].groupby('fullVisitorId').agg(aggregations)
+    test_df_agg = test_df[feats + ['fullVisitorId','totals.transactionRevenue', 'predictions']].groupby('fullVisitorId').agg(aggregations)
 
     train_df_agg.columns = pd.Index([e[0] + "_" + e[1].upper() for e in train_df_agg.columns.tolist()])
     test_df_agg.columns = pd.Index([e[0] + "_" + e[1].upper() for e in test_df_agg.columns.tolist()])
