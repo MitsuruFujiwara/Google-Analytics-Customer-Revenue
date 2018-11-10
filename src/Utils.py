@@ -147,6 +147,9 @@ def load_df(csv_path, nrows=None):
                      dtype={'fullVisitorId': 'str'}, # Important!!
                      nrows=nrows)
 
+    # JSON形式でないカラムを修正する処理
+    df = df.replace(to_replace=r'\'', value='\"', regex=True)
+
     for column in JSON_COLUMNS:
         print("json columns {} done.".format(column))
         column_as_df = json_normalize(df[column])
