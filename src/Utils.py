@@ -137,25 +137,37 @@ def loadpkl(path):
     out = pickle.load(f)
     return out
 
-# 拾い物 https://www.kaggle.com/julian3833/1-quick-start-read-csv-and-flatten-json-fields/notebook
-def load_df(csv_path, nrows=None):
-
-    JSON_COLUMNS = ['device', 'geoNetwork', 'totals', 'trafficSource']
-
-    df = pd.read_csv(csv_path,
-                     converters={column: json.loads for column in JSON_COLUMNS},
-                     dtype={'fullVisitorId': 'str'}, # Important!!
-                     nrows=nrows)
-
-    # JSON形式でないカラムを修正する処理
-    df = df.replace(to_replace=r'\'', value='\"', regex=True)
-
-    for column in JSON_COLUMNS:
-        print("json columns {} done.".format(column))
-        column_as_df = json_normalize(df[column])
-        column_as_df.columns = [column+'.'+subcolumn for subcolumn in column_as_df.columns]
-        df = df.drop(column, axis=1).merge(column_as_df, right_index=True, left_index=True)
-    return df
+# 拾い物 https://www.kaggle.com/yoshoku/gacrp-v2-starter-kit/code
+def load_df(csv_path, num_rows=None, chunksize=100000):
+    features = ['channelGrouping', 'date', 'fullVisitorId', 'visitId',
+                'visitNumber', 'visitStartTime', 'device.browser',
+                'device.deviceCategory', 'device.isMobile', 'device.operatingSystem',
+                'geoNetwork.city', 'geoNetwork.continent', 'geoNetwork.country',
+                'geoNetwork.metro', 'geoNetwork.networkDomain', 'geoNetwork.region',
+                'geoNetwork.subContinent', 'totals.bounces', 'totals.hits',
+                'totals.newVisits', 'totals.pageviews', 'totals.transactionRevenue',
+                'trafficSource.adContent', 'trafficSource.campaign',
+                'trafficSource.isTrueDirect', 'trafficSource.keyword',
+                'trafficSource.medium', 'trafficSource.referralPath',
+                'trafficSource.source']
+    JSON_COLS = ['device', 'geoNetwork', 'totals', 'trafficSource']
+    print('Load {}'.format(csv_path))
+    df_reader = pd.read_csv(csv_path,
+                            converters={ column: json.loads for column in JSON_COLS },
+                            dtype={ 'date': str, 'fullVisitorId': str, 'sessionId': str },
+                            chunksize=chunksize, nrows=num_rows)
+    res = pd.DataFrame()
+    for cidx, df in enumerate(df_reader):
+        df.reset_index(drop=True, inplace=True)
+        for col in JSON_COLS:
+            col_as_df = json_normalize(df[col])
+            col_as_df.columns = ['{}.{}'.format(col, subcol) for subcol in col_as_df.columns]
+            df = df.drop(col, axis=1).merge(col_as_df, right_index=True, left_index=True)
+        res = pd.concat([res, df[features]], axis=0).reset_index(drop=True)
+        del df
+        gc.collect()
+        print('{}: {}'.format(cidx + 1, res.shape))
+    return res
 
 def line_notify(message):
     f = open('../input/line_token.txt')
@@ -430,3 +442,6 @@ def custom(data):
     data['content.source'] = data['trafficSource.adContent'] + "_" + data['source.country']
     data['medium.source'] = data['trafficSource.medium'] + "_" + data['source.country']
     return data
+
+def rmse(y_true, y_pred):
+    return np.sqrt(mean_squared_error(y_true, y_pred))

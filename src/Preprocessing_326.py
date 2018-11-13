@@ -14,8 +14,8 @@ def targetEncoding(df, col, target='TARGET_BIN'):
 def get_df(num_rows=None):
     print("Loading datasets...")
     # load datasets
-    train_df = load_df('../input/train_v2.csv', nrows=num_rows)
-    test_df = load_df('../input/test_v2.csv', nrows=num_rows)
+    train_df = load_df('../input/train_v2.csv', num_rows)
+    test_df = load_df('../input/test_v2.csv', num_rows)
     print("Train samples: {}, test samples: {}".format(len(train_df), len(test_df)))
 
     # train testの識別用
@@ -63,7 +63,7 @@ def get_df(num_rows=None):
     # remember visitId dublicates?
     df["visitId_dublicates"] = df.visitId.map(df.visitId.value_counts())
     # remember session dublicates?
-    df["session_dublicates"] = df.sessionId.map(df.sessionId.value_counts())
+#    df["session_dublicates"] = df.sessionId.map(df.sessionId.value_counts())
 
     # paired categories
     df['source.country'] = df['trafficSource.source'] + '_' + df['geoNetwork.country']
