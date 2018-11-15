@@ -176,12 +176,17 @@ def kfold_lightgbm(df, num_folds, stratified = False, debug= False, use_pkl=Fals
         aggregations[col] = ['sum', 'max', 'min', 'mean', 'median', 'std']
 
     train_df_agg = train_df[feats+['fullVisitorId','totals.transactionRevenue', 'predictions']].groupby('fullVisitorId').agg(aggregations)
+    del train_df
+    gc.collect()
+
     test_df_agg = test_df[feats + ['fullVisitorId','totals.transactionRevenue', 'predictions']].groupby('fullVisitorId').agg(aggregations)
+    del test_df
+    gc.collect()
 
     train_df_agg.columns = pd.Index([e[0] + "_" + e[1].upper() for e in train_df_agg.columns.tolist()])
     test_df_agg.columns = pd.Index([e[0] + "_" + e[1].upper() for e in test_df_agg.columns.tolist()])
 
-    del oof_preds_session, sub_preds_session, train_df, test_df
+    del oof_preds_session, sub_preds_session
     gc.collect()
 
     # Cross validation model
