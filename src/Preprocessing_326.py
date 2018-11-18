@@ -22,14 +22,6 @@ def get_df(num_rows=None):
     train_df['IS_TEST'] = False
     test_df['IS_TEST'] = True
 
-    # 外れ値の処理
-#    train_df.loc[:,'totals.transactionRevenue'] = train_df['totals.transactionRevenue'].astype(float).fillna(0)
-#    mean = train_df[train_df['totals.transactionRevenue']>0]['totals.transactionRevenue'].mean()
-#    std = train_df[train_df['totals.transactionRevenue']>0]['totals.transactionRevenue'].std()
-#    threshold =  mean + std*2
-#    print("mean: {}, std: {}, threshold: {}".format(mean, std, threshold))
-#    train_df = train_df[train_df['totals.transactionRevenue'] < threshold]
-
     # Merge
     df = train_df.append(test_df).reset_index()
 
@@ -43,11 +35,11 @@ def get_df(num_rows=None):
 
     # 季節性変数の処理
     df['vis_date'] = pd.to_datetime(df['visitStartTime'], unit='s')
-    df['hour'] = df['vis_date'].dt.hour
-    df['day'] = df['vis_date'].dt.day
-    df['weekday'] = df['vis_date'].dt.weekday
-    df['month'] = df['vis_date'].dt.month
-    df['weekofyear'] = df['vis_date'].dt.weekofyear
+    df['hour'] = df['vis_date'].dt.hour.astype(object)
+    df['day'] = df['vis_date'].dt.day.astype(object)
+    df['weekday'] = df['vis_date'].dt.weekday.astype(object)
+    df['month'] = df['vis_date'].dt.month.astype(object)
+    df['weekofyear'] = df['vis_date'].dt.weekofyear.astype(object)
 
     df['hour_day'], _ = pd.factorize(df['hour'].astype(str)+'_'+df['day'].astype(str))
     df['hour_weekday'], _ = pd.factorize(df['hour'].astype(str)+'_'+df['weekday'].astype(str))
@@ -58,12 +50,23 @@ def get_df(num_rows=None):
     df['day_weekofyear'], _ = pd.factorize(df['day'].astype(str)+'_'+df['weekofyear'].astype(str))
     df['weekday_month'], _ = pd.factorize(df['weekday'].astype(str)+'_'+df['month'].astype(str))
 
-    # remember these features were equal, but not always? May be it means something...
-    df["id_incoherence"] = pd.to_datetime(df.visitId, unit='s') != df['vis_date']
-    # remember visitId dublicates?
-    df["visitId_dublicates"] = df.visitId.map(df.visitId.value_counts())
-    # remember session dublicates?
-#    df["session_dublicates"] = df.sessionId.map(df.sessionId.value_counts())
+    cat_cols=['channelGrouping', 'device.browser', ]
+
+
+
+    df, cat_cols = one_hot_encoder(df, nan_as_category=False)
+
+    cat_aggregations={
+    }
+
+    num_aggregations={
+
+    }
+
+    df_agg = df.groupby('fullVisitorId').agg({**num_aggregations, **cat_aggregations})
+
+    del df
+    gc.collect()
 
     # paired categories
     df['source.country'] = df['trafficSource.source'] + '_' + df['geoNetwork.country']
