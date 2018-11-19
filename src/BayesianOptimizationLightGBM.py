@@ -16,7 +16,8 @@ from Utils import NUM_FOLDS, EXCLUDED_FEATURES
 
 NUM_ROWS=None
 
-DF = get_df(NUM_ROWS)
+#DF = get_df(NUM_ROWS)
+DF = loadpkl('../output/df.pkl')
 
 # split test & train
 TRAIN_DF = DF[~DF['IS_TEST']]
