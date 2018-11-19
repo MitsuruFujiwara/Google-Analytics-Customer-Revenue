@@ -107,7 +107,6 @@ def kfold_lightgbm(df, num_folds, stratified = False, debug= False, use_pkl=Fals
                 'boosting': 'gbdt',
                 'objective': 'regression',
                 'metric': 'rmse',
-                'num_iteration': 10000,
                 'learning_rate': 0.02,
                 'num_leaves': 64,
                 'colsample_bytree': 0.553240348074409,
@@ -129,6 +128,7 @@ def kfold_lightgbm(df, num_folds, stratified = False, debug= False, use_pkl=Fals
                         lgb_train,
                         valid_sets=[lgb_train, lgb_test],
                         valid_names=['train', 'test'],
+                        num_boost_round=10000,
                         early_stopping_rounds= 200,
                         verbose_eval=100
                         )
@@ -176,7 +176,7 @@ def main(debug=False, use_pkl=False):
     num_rows = 10000 if debug else None
     with timer("Preprocessing"):
         df = get_df(num_rows) if not use_pkl else loadpkl('../output/df.pkl')
-        save2pkl('../output/df.pkl', df)
+#        save2pkl('../output/df.pkl', df)
         print("df shape:", df.shape)
     with timer("Run LightGBM with kfold"):
         kfold_lightgbm(df, num_folds=NUM_FOLDS, stratified=False, debug=debug, use_pkl=use_pkl)
@@ -185,4 +185,4 @@ if __name__ == "__main__":
     submission_file_name = "../output/submission.csv"
     oof_file_name = "../output/oof_lgbm.csv"
     with timer("Full model run"):
-        main(debug=False, use_pkl=False)
+        main(debug=True, use_pkl=False)
