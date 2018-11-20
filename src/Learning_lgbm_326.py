@@ -70,8 +70,8 @@ def display_importances(feature_importance_df_, outputpath, csv_outputpath):
 def kfold_lightgbm(df, num_folds, stratified = False, debug= False, use_pkl=False):
 
     # Divide in training/validation and test data
-    train_df = df[df['IS_TEST_MEAN']==0]
-    test_df = df[df['IS_TEST_MEAN']==1]
+    train_df = df[~df['IS_TEST']]
+    test_df = df[df['IS_TEST']]
 
     print("Starting LightGBM. Train shape: {}, test shape: {}".format(train_df.shape, test_df.shape))
     del df

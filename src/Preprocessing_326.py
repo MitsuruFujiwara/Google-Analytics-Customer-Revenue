@@ -21,8 +21,12 @@ def get_df(num_rows=None):
     print("Train samples: {}, test samples: {}".format(len(train_df), len(test_df)))
 
     # train testの識別用
-    train_df['IS_TEST'] = False
-    test_df['IS_TEST'] = True
+    train_df['IS_TEST'] = True
+    test_df['IS_TEST'] = False
+
+    # train & testのIDを保持
+    train_id = train_df['fullVisitorId'].unique()
+    test_id = test_df['fullVisitorId'].unique()
 
     # Merge
     df = train_df.append(test_df).reset_index()
@@ -136,20 +140,23 @@ def get_df(num_rows=None):
     # user levelへaggregate
     feats = [f for f in df.columns if f not in EXCLUDED_FEATURES+['totals.transactionRevenue']]
 
-    aggregations = {'totals.transactionRevenue': ['sum'],
-                    'IS_TEST': ['mean']}
+    aggregations = {'totals.transactionRevenue': ['sum']}
 
     for f in feats:
         aggregations[f] = ['sum', 'max', 'min', 'mean']
 
     # aggregate
-    df = df[feats+['fullVisitorId','totals.transactionRevenue', 'IS_TEST']].groupby('fullVisitorId').agg(aggregations)
+    df = df[feats+['fullVisitorId','totals.transactionRevenue']].groupby('fullVisitorId').agg(aggregations)
 
     # reset columns name
     df.columns = pd.Index([e[0] + "_" + e[1].upper() for e in df.columns.tolist()])
 
+    # test & trainの識別用フラグを付与
+    df.loc[train_id, 'IS_TEST']=False
+    df.loc[test_id, 'IS_TEST']=True
+
     gc.collect()
-    
+
     return df
 
 if __name__ == '__main__':
