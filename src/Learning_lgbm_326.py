@@ -158,13 +158,13 @@ def kfold_lightgbm(df, num_folds, stratified = False, debug= False, use_pkl=Fals
         # 提出データの予測値を保存
         test_df.loc[:,'PredictedLogRevenue'] = sub_preds
         submission = test_df[['PredictedLogRevenue']]
-        submission['PredictedLogRevenue'] = np.log1p(submission['PredictedLogRevenue'])
-        submission['PredictedLogRevenue'] =  submission['PredictedLogRevenue'].apply(lambda x : 0.0 if x < 0 else x)
-        submission['PredictedLogRevenue'] = submission['PredictedLogRevenue'].fillna(0)
+        submission.loc[:,'PredictedLogRevenue'] = np.log1p(submission['PredictedLogRevenue'])
+        submission.loc[:,'PredictedLogRevenue'] =  submission['PredictedLogRevenue'].apply(lambda x : 0.0 if x < 0 else x)
+        submission.loc[:,'PredictedLogRevenue'] = submission['PredictedLogRevenue'].fillna(0)
         submission.to_csv(submission_file_name, index=True)
 
         # out of foldの予測値を保存
-        train_df['OOF_PRED'] = oof_preds
+        train_df.loc[:,'OOF_PRED'] = oof_preds
         train_df[['OOF_PRED']].to_csv(oof_file_name, index= True)
 
         # API経由でsubmit
@@ -185,4 +185,4 @@ if __name__ == "__main__":
     submission_file_name = "../output/submission.csv"
     oof_file_name = "../output/oof_lgbm.csv"
     with timer("Full model run"):
-        main(debug=True, use_pkl=False)
+        main(debug=False, use_pkl=False)

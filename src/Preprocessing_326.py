@@ -140,7 +140,7 @@ def get_df(num_rows=None):
                     'IS_TEST': ['mean']}
 
     for f in feats:
-        aggregations[f] = ['sum', 'max', 'min', 'mean', 'median', 'std']
+        aggregations[f] = ['sum', 'max', 'min', 'mean']
 
     # aggregate
     df = df[feats+['fullVisitorId','totals.transactionRevenue', 'IS_TEST']].groupby('fullVisitorId').agg(aggregations)
@@ -148,6 +148,8 @@ def get_df(num_rows=None):
     # reset columns name
     df.columns = pd.Index([e[0] + "_" + e[1].upper() for e in df.columns.tolist()])
 
+    gc.collect()
+    
     return df
 
 if __name__ == '__main__':
