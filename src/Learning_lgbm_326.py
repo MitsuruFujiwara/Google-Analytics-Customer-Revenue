@@ -157,7 +157,7 @@ def kfold_lightgbm(df, num_folds, stratified = False, debug= False, use_pkl=Fals
     if not debug:
         # 提出データの予測値を保存
         test_df.loc[:,'PredictedLogRevenue'] = sub_preds
-        submission = test_df[['PredictedLogRevenue']]
+        submission = test_df[['fullVisitorId', 'PredictedLogRevenue']]
         submission.loc[:,'PredictedLogRevenue'] = np.log1p(submission['PredictedLogRevenue'])
         submission.loc[:,'PredictedLogRevenue'] =  submission['PredictedLogRevenue'].apply(lambda x : 0.0 if x < 0 else x)
         submission.loc[:,'PredictedLogRevenue'] = submission['PredictedLogRevenue'].fillna(0)
