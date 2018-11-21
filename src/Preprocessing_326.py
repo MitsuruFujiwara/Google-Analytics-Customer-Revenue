@@ -13,6 +13,17 @@ def targetEncoding(df, col, target='TARGET_BIN'):
     res = df[col].fillna(-1).map(dict_for_map)
     return res
 
+# preprocessing numerical values
+def preprocessing_numeric(df):
+    # TODO: ここに処理を移動
+    return df
+
+# preprocessing categorical values
+def preprocessing_categorical(df):
+    # TODO: ここに処理を移動
+    return df
+
+# mainの処理
 def get_df(num_rows=None):
     print("Loading datasets...")
     # load datasets
@@ -39,6 +50,10 @@ def get_df(num_rows=None):
     df=df.replace('(not set)', np.nan)
     df=df.replace('(not provided)', np.nan)
     df=df.replace('(none)', np.nan)
+
+    # numerical colsの欠損値を0に
+    df['totals.bounces'] = df['totals.bounces'].fillna(0)
+    df['totals.newVisits'] = df['totals.newVisits'].fillna(0)
 
     # 全ての値が等しいデータを削除
     for col in df.columns:
@@ -96,6 +111,9 @@ def get_df(num_rows=None):
 
     # numeric columnsの抽出
     num_cols = [c for c in df.columns if c.startswith("total") and c not in EXCLUDED_FEATURES]
+
+    for n in num_cols:
+        print(n)
 
     # numeric columnsを数値型へ変換
     df[num_cols] = df[num_cols].astype(float)
@@ -157,7 +175,7 @@ def get_df(num_rows=None):
 
     gc.collect()
 
-    return df
+    return df.reset_index()
 
 if __name__ == '__main__':
     # test

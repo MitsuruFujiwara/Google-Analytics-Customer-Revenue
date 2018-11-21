@@ -78,7 +78,7 @@ def kfold_lightgbm(df, num_folds, stratified = False, debug= False, use_pkl=Fals
     gc.collect()
 
     # Cross validation model
-    folds = get_folds(df=train_df[['totals.pageviews_MEAN']].reset_index(), n_splits=num_folds)
+    folds = get_folds(df=train_df, n_splits=num_folds)
 
     # Create arrays and dataframes to store results
     oof_preds = np.zeros(train_df.shape[0])
@@ -99,7 +99,7 @@ def kfold_lightgbm(df, num_folds, stratified = False, debug= False, use_pkl=Fals
                                label=valid_y,
                                free_raw_data=False)
 
-        # TODO: parameter tuning
+        # params estimated by bayesian optimization
         params ={
                 'device' : 'gpu',
 #                'gpu_use_dp':True,
@@ -107,16 +107,16 @@ def kfold_lightgbm(df, num_folds, stratified = False, debug= False, use_pkl=Fals
                 'boosting': 'gbdt',
                 'objective': 'regression',
                 'metric': 'rmse',
-                'learning_rate': 0.02,
+                'learning_rate': 0.01,
                 'num_leaves': 64,
-                'colsample_bytree': 0.553240348074409,
-                'subsample': 0.471522873020333,
-                'max_depth': 8,
-                'reg_alpha': 9.83318745912308,
-                'reg_lambda': 0.925142409255232,
-                'min_split_gain': 0.954402595384603,
-                'min_child_weight': 44,
-                'min_data_in_leaf': 79,
+                'colsample_bytree': 0.423362771564478,
+                'subsample': 0.28631547518949,
+                'max_depth': 7,
+                'reg_alpha': 7.00011917374063,
+                'reg_lambda': 1.57317923913574,
+                'min_split_gain': 0.59000348557552,
+                'min_child_weight': 41,
+                'min_data_in_leaf': 2,
                 'verbose': -1,
                 'seed':int(2**n_fold),
                 'bagging_seed':int(2**n_fold),

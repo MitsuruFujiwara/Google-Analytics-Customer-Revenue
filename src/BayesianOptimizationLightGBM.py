@@ -20,7 +20,7 @@ DF = get_df(NUM_ROWS)
 #DF = loadpkl('../output/df.pkl')
 
 # split test & train
-TRAIN_DF = DF[DF['IS_TEST_MEAN']==0]
+TRAIN_DF = DF[~DF['IS_TEST']]
 FEATS = [f for f in TRAIN_DF.columns if f not in EXCLUDED_FEATURES+['totals.transactionRevenue_SUM']]
 
 lgbm_train = lightgbm.Dataset(TRAIN_DF[FEATS],
