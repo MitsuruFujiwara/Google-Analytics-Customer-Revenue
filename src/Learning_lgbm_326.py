@@ -161,11 +161,11 @@ def kfold_lightgbm(df, num_folds, stratified = False, debug= False, use_pkl=Fals
         submission.loc[:,'PredictedLogRevenue'] = np.log1p(submission['PredictedLogRevenue'])
         submission.loc[:,'PredictedLogRevenue'] =  submission['PredictedLogRevenue'].apply(lambda x : 0.0 if x < 0 else x)
         submission.loc[:,'PredictedLogRevenue'] = submission['PredictedLogRevenue'].fillna(0)
-        submission.to_csv(submission_file_name, index=True)
+        submission.to_csv(submission_file_name, index=False)
 
         # out of foldの予測値を保存
         train_df.loc[:,'OOF_PRED'] = oof_preds
-        train_df[['OOF_PRED']].to_csv(oof_file_name, index= True)
+        train_df[['fullVisitorId', 'OOF_PRED']].to_csv(oof_file_name, index=False)
 
         # API経由でsubmit
         submit(submission_file_name, comment='cv: %.6f' % full_rmse)
