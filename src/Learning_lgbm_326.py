@@ -163,6 +163,9 @@ def kfold_lightgbm(df, num_folds, stratified = False, debug= False, use_pkl=Fals
     train_df.loc[:,'predictions'] = oof_preds_session
     test_df.loc[:,'predictions'] = sub_preds_session
 
+    del oof_preds_session, sub_preds_session
+    gc.collect()
+
     # csv形式でsave
     train_df['predictions'].to_csv("../output/oof_lgbm_session.csv")
     test_df['predictions'].to_csv("../output/sub_lgbm_session.csv")
@@ -173,24 +176,72 @@ def kfold_lightgbm(df, num_folds, stratified = False, debug= False, use_pkl=Fals
 
     print('Starting User Level predictions...')
 
-    # Aggregate data at User level
-    aggregations = {'totals.transactionRevenue': ['sum']}
-    for col in feats+['predictions']:
-        aggregations[col] = ['sum', 'max', 'min', 'mean']
+    if use_pkl:
+        # load pkl
+        train_df_agg = read_pickles('../output/train_df_agg')
+        test_df_agg = read_pickles('../output/test_df_agg')
+    else:
+        # Aggregate data at User level
+        aggregations = {'totals.transactionRevenue': ['sum']}
+        for col in feats+['predictions']:
+            aggregations[col] = ['sum', 'max', 'min', 'mean']
 
-    train_df_agg = train_df[feats+['fullVisitorId','totals.transactionRevenue', 'predictions']].groupby('fullVisitorId').agg(aggregations)
-    del train_df
-    gc.collect()
+        train_df_agg = train_df[feats+['fullVisitorId','totals.transactionRevenue', 'predictions']].groupby('fullVisitorId').agg(aggregations)
+        train_df_agg.columns = pd.Index([e[0] + "_" + e[1].upper() for e in train_df_agg.columns.tolist()])
 
-    test_df_agg = test_df[feats + ['fullVisitorId','totals.transactionRevenue', 'predictions']].groupby('fullVisitorId').agg(aggregations)
-    del test_df
-    gc.collect()
+        # Create a list of predictions for each Visitor
+        with timer("Create a list of predictions for each Visitor"):
+            trn_pred_list = train_df[['fullVisitorId', 'predictions']].groupby('fullVisitorId')\
+                .apply(lambda df: list(df.predictions))\
+                .apply(lambda x: {'pred_'+str(i): pred for i, pred in enumerate(x)})
 
-    train_df_agg.columns = pd.Index([e[0] + "_" + e[1].upper() for e in train_df_agg.columns.tolist()])
-    test_df_agg.columns = pd.Index([e[0] + "_" + e[1].upper() for e in test_df_agg.columns.tolist()])
+        del train_df
+        gc.collect()
 
-    del oof_preds_session, sub_preds_session
-    gc.collect()
+        # Create a DataFrame with VisitorId as index
+        # trn_pred_list contains dict
+        # so creating a dataframe from it will expand dict values into columns
+        trn_all_predictions = pd.DataFrame(list(trn_pred_list.values), index=train_df_agg.index)
+        trn_feats = trn_all_predictions.columns
+        trn_all_predictions['t_mean'] = np.log1p(trn_all_predictions[trn_feats].mean(axis=1))
+        trn_all_predictions['t_median'] = np.log1p(trn_all_predictions[trn_feats].median(axis=1))
+        trn_all_predictions['t_sum_log'] = np.log1p(trn_all_predictions[trn_feats]).sum(axis=1)
+        trn_all_predictions['t_sum_act'] = np.log1p(trn_all_predictions[trn_feats].fillna(0).sum(axis=1))
+        trn_all_predictions['t_nb_sess'] = trn_all_predictions[trn_feats].isnull().sum(axis=1)
+        train_df_agg = pd.concat([train_df_agg, trn_all_predictions], axis=1)
+
+        del trn_all_predictions, trn_pred_list
+        gc.collect()
+
+        test_df_agg = test_df[feats + ['fullVisitorId','totals.transactionRevenue', 'predictions']].groupby('fullVisitorId').agg(aggregations)
+        test_df_agg.columns = pd.Index([e[0] + "_" + e[1].upper() for e in test_df_agg.columns.tolist()])
+
+        # Create a list of predictions for each Visitor
+        with timer("Create a list of predictions for each Visitor"):
+            sub_pred_list = test_df[['fullVisitorId', 'predictions']].groupby('fullVisitorId')\
+                .apply(lambda df: list(df.predictions))\
+                .apply(lambda x: {'pred_'+str(i): pred for i, pred in enumerate(x)})
+
+        del test_df
+        gc.collect()
+
+        sub_all_predictions = pd.DataFrame(list(sub_pred_list.values), index=test_df_agg.index)
+        for f in trn_feats:
+            if f not in sub_all_predictions.columns:
+                sub_all_predictions[f] = np.nan
+        sub_all_predictions['t_mean'] = np.log1p(sub_all_predictions[trn_feats].mean(axis=1))
+        sub_all_predictions['t_median'] = np.log1p(sub_all_predictions[trn_feats].median(axis=1))
+        sub_all_predictions['t_sum_log'] = np.log1p(sub_all_predictions[trn_feats]).sum(axis=1)
+        sub_all_predictions['t_sum_act'] = np.log1p(sub_all_predictions[trn_feats].fillna(0).sum(axis=1))
+        sub_all_predictions['t_nb_sess'] = sub_all_predictions[trn_feats].isnull().sum(axis=1)
+        test_df_agg = pd.concat([test_df_agg, sub_all_predictions], axis=1)
+
+        del sub_all_predictions, sub_pred_list, trn_feats
+        gc.collect()
+
+        # save pkl
+        to_pickles(train_df_agg, '../output/train_df_agg', split_size=30, inplace=False)
+        to_pickles(test_df_agg, '../output/test_df_agg', split_size=5, inplace=False)
 
     # Cross validation model
     folds_agg = get_folds(df=train_df_agg[['totals.pageviews_MEAN']].reset_index(), n_splits=num_folds)

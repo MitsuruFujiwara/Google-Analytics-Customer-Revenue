@@ -7,11 +7,14 @@ import time
 import pickle
 import logging
 
+from glob import glob
 from time import time, sleep
 from pandas.io.json import json_normalize
 from multiprocessing import Pool as Pool
 from contextlib import contextmanager
 from sklearn.metrics import mean_squared_error
+from sklearn.model_selection import KFold
+from tqdm import tqdm
 
 import requests
 import functools
@@ -465,10 +468,10 @@ def to_pickles(df, path, split_size=3, inplace=True):
     """
     print('shape: {}'.format(df.shape))
 
-    if inplace==True:
-        df.reset_index(drop=True, inplace=True)
-    else:
-        df = df.reset_index(drop=True)
+#    if inplace==True:
+#        df.reset_index(drop=True, inplace=True)
+#    else:
+#        df = df.reset_index(drop=True)
     gc.collect()
     mkdir_p(path)
 

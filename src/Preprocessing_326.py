@@ -59,6 +59,8 @@ def get_df(num_rows=None):
     df['totals.bounces'] = df['totals.bounces'].fillna(0)
     df['totals.newVisits'] = df['totals.newVisits'].fillna(0)
 
+    df['trafficSource.isTrueDirect']=df['trafficSource.isTrueDirect'].fillna(0)*1
+
     # 不要カラムを抽出
     for col in df.columns:
         if len(df[col].value_counts()) == 1:
