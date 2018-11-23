@@ -32,12 +32,16 @@ def get_df(num_rows=None):
     print("Train samples: {}, test samples: {}".format(len(train_df), len(test_df)))
 
     # train testの識別用
-    train_df['IS_TEST'] = True
-    test_df['IS_TEST'] = False
+    train_df['IS_TEST'] = False
+    test_df['IS_TEST'] = True
 
-    # train & testのIDを保持
-    train_id = train_df['fullVisitorId'].unique()
-    test_id = test_df['fullVisitorId'].unique()
+    # 外れ値の処理
+#    train_df.loc[:,'totals.transactionRevenue'] = train_df['totals.transactionRevenue'].astype(float).fillna(0)
+#    mean = train_df[train_df['totals.transactionRevenue']>0]['totals.transactionRevenue'].mean()
+#    std = train_df[train_df['totals.transactionRevenue']>0]['totals.transactionRevenue'].std()
+#    threshold =  mean + std*2
+#    print("mean: {}, std: {}, threshold: {}".format(mean, std, threshold))
+#    train_df = train_df[train_df['totals.transactionRevenue'] < threshold]
 
     # Merge
     df = train_df.append(test_df).reset_index()
@@ -55,22 +59,18 @@ def get_df(num_rows=None):
     df['totals.bounces'] = df['totals.bounces'].fillna(0)
     df['totals.newVisits'] = df['totals.newVisits'].fillna(0)
 
-    # 全ての値が等しいデータを削除
+    # 不要カラムを抽出
     for col in df.columns:
         if len(df[col].value_counts()) == 1:
             EXCLUDED_FEATURES.append(col)
 
-    # 欠損値の割合が75%以上のデータを削除
-#    col_missing = removeMissingVariables(df, 0.75)
-#    df = df.drop(col_missing, axis=1)
-
     # 季節性変数の処理
     df['vis_date'] = pd.to_datetime(df['visitStartTime'], unit='s')
-    df['hour'] = df['vis_date'].dt.hour.astype(object)
-    df['day'] = df['vis_date'].dt.day.astype(object)
-    df['weekday'] = df['vis_date'].dt.weekday.astype(object)
-    df['month'] = df['vis_date'].dt.month.astype(object)
-    df['weekofyear'] = df['vis_date'].dt.weekofyear.astype(object)
+    df['hour'] = df['vis_date'].dt.hour
+    df['day'] = df['vis_date'].dt.day
+    df['weekday'] = df['vis_date'].dt.weekday
+    df['month'] = df['vis_date'].dt.month
+    df['weekofyear'] = df['vis_date'].dt.weekofyear
 
     df['hour_day'], _ = pd.factorize(df['hour'].astype(str)+'_'+df['day'].astype(str))
     df['hour_weekday'], _ = pd.factorize(df['hour'].astype(str)+'_'+df['weekday'].astype(str))
@@ -80,6 +80,13 @@ def get_df(num_rows=None):
     df['day_month'], _ = pd.factorize(df['day'].astype(str)+'_'+df['month'].astype(str))
     df['day_weekofyear'], _ = pd.factorize(df['day'].astype(str)+'_'+df['weekofyear'].astype(str))
     df['weekday_month'], _ = pd.factorize(df['weekday'].astype(str)+'_'+df['month'].astype(str))
+
+    # remember these features were equal, but not always? May be it means something...
+    df["id_incoherence"] = pd.to_datetime(df.visitId, unit='s') != df['vis_date']
+    # remember visitId dublicates?
+    df["visitId_dublicates"] = df.visitId.map(df.visitId.value_counts())
+    # remember session dublicates?
+#    df["session_dublicates"] = df.sessionId.map(df.sessionId.value_counts())
 
     # paired categories
     df['source.country'] = df['trafficSource.source'] + '_' + df['geoNetwork.country']
@@ -111,9 +118,6 @@ def get_df(num_rows=None):
 
     # numeric columnsの抽出
     num_cols = [c for c in df.columns if c.startswith("total") and c not in EXCLUDED_FEATURES]
-
-    for n in num_cols:
-        print(n)
 
     # numeric columnsを数値型へ変換
     df[num_cols] = df[num_cols].astype(float)
@@ -155,27 +159,7 @@ def get_df(num_rows=None):
     df['nb_visitNumber'] = df['date'].map(df[['date', 'visitNumber']].groupby('date')['visitNumber'].sum())
     df['ratio_visitNumber'] = df['visitNumber'] / df['nb_visitNumber']
 
-    # user levelへaggregate
-    feats = [f for f in df.columns if f not in EXCLUDED_FEATURES+['totals.transactionRevenue']]
-
-    aggregations = {'totals.transactionRevenue': ['sum']}
-
-    for f in feats:
-        aggregations[f] = ['sum', 'max', 'min', 'mean']
-
-    # aggregate
-    df = df[feats+['fullVisitorId','totals.transactionRevenue']].groupby('fullVisitorId').agg(aggregations)
-
-    # reset columns name
-    df.columns = pd.Index([e[0] + "_" + e[1].upper() for e in df.columns.tolist()])
-
-    # test & trainの識別用フラグを付与
-    df.loc[train_id, 'IS_TEST']=False
-    df.loc[test_id, 'IS_TEST']=True
-
-    gc.collect()
-
-    return df.reset_index()
+    return df
 
 if __name__ == '__main__':
     # test

@@ -11,6 +11,8 @@ from time import time, sleep
 from pandas.io.json import json_normalize
 from multiprocessing import Pool as Pool
 from contextlib import contextmanager
+from sklearn.metrics import mean_squared_error
+
 import requests
 import functools
 import gc
@@ -445,3 +447,44 @@ def custom(data):
 
 def rmse(y_true, y_pred):
     return np.sqrt(mean_squared_error(y_true, y_pred))
+
+def mkdir_p(path):
+    try:
+        os.stat(path)
+    except:
+        os.mkdir(path)
+
+# 複数のpklファイルに分割して保存する機能
+def to_pickles(df, path, split_size=3, inplace=True):
+    """
+    path = '../output/mydf'
+
+    wirte '../output/mydf/0.p'
+          '../output/mydf/1.p'
+          '../output/mydf/2.p'
+    """
+    print('shape: {}'.format(df.shape))
+
+    if inplace==True:
+        df.reset_index(drop=True, inplace=True)
+    else:
+        df = df.reset_index(drop=True)
+    gc.collect()
+    mkdir_p(path)
+
+    kf = KFold(n_splits=split_size)
+    for i, (train_index, val_index) in enumerate(tqdm(kf.split(df))):
+        df.iloc[val_index].to_pickle(path+'/'+str(i)+'.pkl')
+    return
+
+# path以下の複数pklファイルを読み込む機能
+def read_pickles(path, col=None, use_tqdm=True):
+    if col is None:
+        if use_tqdm:
+            df = pd.concat([ pd.read_pickle(f) for f in tqdm(sorted(glob(path+'/*'))) ])
+        else:
+            print('reading {}'.format(path))
+            df = pd.concat([ pd.read_pickle(f) for f in sorted(glob(path+'/*')) ])
+    else:
+        df = pd.concat([ pd.read_pickle(f)[col] for f in tqdm(sorted(glob(path+'/*'))) ])
+    return df
