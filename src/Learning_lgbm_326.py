@@ -176,7 +176,7 @@ def kfold_lightgbm(df, num_folds, stratified = False, debug= False, use_pkl=Fals
 
     print('Starting User Level predictions...')
 
-    if use_pkl:
+    if False:
         # load pkl
         train_df_agg = read_pickles('../output/train_df_agg')
         test_df_agg = read_pickles('../output/test_df_agg')
@@ -203,12 +203,15 @@ def kfold_lightgbm(df, num_folds, stratified = False, debug= False, use_pkl=Fals
         # so creating a dataframe from it will expand dict values into columns
         trn_all_predictions = pd.DataFrame(list(trn_pred_list.values), index=train_df_agg.index)
         trn_feats = trn_all_predictions.columns
-        trn_all_predictions['t_mean'] = np.log1p(trn_all_predictions[trn_feats].mean(axis=1))
-        trn_all_predictions['t_median'] = np.log1p(trn_all_predictions[trn_feats].median(axis=1))
-        trn_all_predictions['t_sum_log'] = np.log1p(trn_all_predictions[trn_feats]).sum(axis=1)
-        trn_all_predictions['t_sum_act'] = np.log1p(trn_all_predictions[trn_feats].fillna(0).sum(axis=1))
-        trn_all_predictions['t_nb_sess'] = trn_all_predictions[trn_feats].isnull().sum(axis=1)
+        trn_all_predictions.loc[:,'t_mean'] = np.log1p(trn_all_predictions[trn_feats].mean(axis=1))
+        trn_all_predictions.loc[:,'t_median'] = np.log1p(trn_all_predictions[trn_feats].median(axis=1))
+        trn_all_predictions.loc[:,'t_sum_log'] = np.log1p(trn_all_predictions[trn_feats]).sum(axis=1)
+        trn_all_predictions.loc[:,'t_sum_act'] = np.log1p(trn_all_predictions[trn_feats].fillna(0).sum(axis=1))
+        trn_all_predictions.loc[:,'t_nb_sess'] = trn_all_predictions[trn_feats].isnull().sum(axis=1)
         train_df_agg = pd.concat([train_df_agg, trn_all_predictions], axis=1)
+
+        # save pkl
+        to_pickles(train_df_agg, '../output/train_df_agg', split_size=50, inplace=False)
 
         del trn_all_predictions, trn_pred_list
         gc.collect()
@@ -229,18 +232,17 @@ def kfold_lightgbm(df, num_folds, stratified = False, debug= False, use_pkl=Fals
         for f in trn_feats:
             if f not in sub_all_predictions.columns:
                 sub_all_predictions[f] = np.nan
-        sub_all_predictions['t_mean'] = np.log1p(sub_all_predictions[trn_feats].mean(axis=1))
-        sub_all_predictions['t_median'] = np.log1p(sub_all_predictions[trn_feats].median(axis=1))
-        sub_all_predictions['t_sum_log'] = np.log1p(sub_all_predictions[trn_feats]).sum(axis=1)
-        sub_all_predictions['t_sum_act'] = np.log1p(sub_all_predictions[trn_feats].fillna(0).sum(axis=1))
-        sub_all_predictions['t_nb_sess'] = sub_all_predictions[trn_feats].isnull().sum(axis=1)
+        sub_all_predictions.loc[:,'t_mean'] = np.log1p(sub_all_predictions[trn_feats].mean(axis=1))
+        sub_all_predictions.loc[:,'t_median'] = np.log1p(sub_all_predictions[trn_feats].median(axis=1))
+        sub_all_predictions.loc[:,'t_sum_log'] = np.log1p(sub_all_predictions[trn_feats]).sum(axis=1)
+        sub_all_predictions.loc[:,'t_sum_act'] = np.log1p(sub_all_predictions[trn_feats].fillna(0).sum(axis=1))
+        sub_all_predictions.loc[:,'t_nb_sess'] = sub_all_predictions[trn_feats].isnull().sum(axis=1)
         test_df_agg = pd.concat([test_df_agg, sub_all_predictions], axis=1)
 
         del sub_all_predictions, sub_pred_list, trn_feats
         gc.collect()
 
         # save pkl
-        to_pickles(train_df_agg, '../output/train_df_agg', split_size=30, inplace=False)
         to_pickles(test_df_agg, '../output/test_df_agg', split_size=5, inplace=False)
 
     # Cross validation model
@@ -351,4 +353,4 @@ if __name__ == "__main__":
     submission_file_name = "../output/submission.csv"
     oof_file_name = "../output/oof_lgbm.csv"
     with timer("Full model run"):
-        main(debug=False, use_pkl=False)
+        main(debug=False, use_pkl=True)
