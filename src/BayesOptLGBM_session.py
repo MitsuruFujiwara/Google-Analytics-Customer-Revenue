@@ -29,6 +29,11 @@ lgbm_train = lightgbm.Dataset(TRAIN_DF[FEATS],
                               free_raw_data=False
                               )
 
+folds = get_folds(df=TRAIN_DF, n_splits=NUM_FOLDS)
+
+del TRAIN_DF
+gc.collect()
+
 def lgbm_eval(num_leaves,
               colsample_bytree,
               subsample,
@@ -58,8 +63,6 @@ def lgbm_eval(num_leaves,
     params['min_child_weight'] = min_child_weight
     params['min_data_in_leaf'] = int(min_data_in_leaf)
     params['verbose']=-1
-
-    folds = get_folds(df=TRAIN_DF, n_splits=NUM_FOLDS)
 
     clf = lightgbm.cv(params=params,
                       train_set=lgbm_train,

@@ -352,7 +352,7 @@ def main(debug=False, use_pkl=False):
         kfold_lightgbm(df, num_folds=NUM_FOLDS, stratified=False, debug=debug, use_pkl=use_pkl)
 
 if __name__ == "__main__":
-    submission_file_name = "../output/submission.csv"
+    submission_file_name = "../output/submission_lgbm.csv"
     oof_file_name = "../output/oof_lgbm.csv"
     with timer("Full model run"):
         main(debug=False, use_pkl=True)

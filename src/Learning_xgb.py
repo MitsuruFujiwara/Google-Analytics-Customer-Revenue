@@ -305,7 +305,7 @@ def kfold_xgboost(df, num_folds, stratified = False, debug= False, use_pkl=False
         feature_importance_df_agg = pd.concat([feature_importance_df_agg, fold_importance_df], axis=0)
 
         print('Fold %2d RMSE : %.6f' % (n_fold + 1, rmse(valid_y, np.log1p(oof_preds_agg[valid_idx]))))
-        del reg, train_x, train_y, valid_x, valid_y
+        del reg, train_x, train_y, valid_x, valid_y, fold_importance_df
         gc.collect()
 
     # Full RMSEスコアの表示&LINE通知
@@ -338,8 +338,8 @@ def kfold_xgboost(df, num_folds, stratified = False, debug= False, use_pkl=False
 def main(debug=False, use_pkl=False):
     num_rows = 10000 if debug else None
     with timer("Preprocessing"):
-        df = get_df(num_rows) if not use_pkl else read_pickles('../output/df_tmp')
-        to_pickles(df, '../output/df_tmp', split_size=30)
+        df = get_df(num_rows) if not use_pkl else read_pickles('../output/df')
+        to_pickles(df, '../output/df', split_size=30)
         print("df shape:", df.shape)
     with timer("Run XGBoost with kfold"):
         kfold_xgboost(df, num_folds=NUM_FOLDS, stratified=False, debug=debug, use_pkl=use_pkl)
@@ -348,4 +348,4 @@ if __name__ == "__main__":
     submission_file_name = "../output/submission_xgb.csv"
     oof_file_name = "../output/oof_xgb.csv"
     with timer("Full model run"):
-        main(debug=True, use_pkl=False)
+        main(debug=False, use_pkl=True)
