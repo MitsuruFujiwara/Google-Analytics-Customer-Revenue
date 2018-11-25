@@ -184,10 +184,11 @@ def kfold_lightgbm(df, num_folds, stratified = False, debug= False, use_pkl=Fals
         # Aggregate data at User level
         aggregations = {'totals.transactionRevenue': ['sum']}
         for col in feats+['predictions']:
-            aggregations[col] = ['sum', 'mean']
+            aggregations[col] = ['sum', 'max', 'min', 'mean', 'std']
 
         train_df_agg = train_df[feats+['fullVisitorId','totals.transactionRevenue', 'predictions']].groupby('fullVisitorId').agg(aggregations)
         train_df_agg.columns = pd.Index([e[0] + "_" + e[1].upper() for e in train_df_agg.columns.tolist()])
+        train_df_agg = train_df_agg.astype('float32')
 
         # Create a list of predictions for each Visitor
         with timer("Create a list of predictions for each Visitor"):
@@ -203,11 +204,11 @@ def kfold_lightgbm(df, num_folds, stratified = False, debug= False, use_pkl=Fals
         # so creating a dataframe from it will expand dict values into columns
         trn_all_predictions = pd.DataFrame(list(trn_pred_list.values), index=train_df_agg.index)
         trn_feats = trn_all_predictions.columns
-        trn_all_predictions.loc[:,'t_mean'] = np.log1p(trn_all_predictions[trn_feats].mean(axis=1))
-        trn_all_predictions.loc[:,'t_median'] = np.log1p(trn_all_predictions[trn_feats].median(axis=1))
-        trn_all_predictions.loc[:,'t_sum_log'] = np.log1p(trn_all_predictions[trn_feats]).sum(axis=1)
-        trn_all_predictions.loc[:,'t_sum_act'] = np.log1p(trn_all_predictions[trn_feats].fillna(0).sum(axis=1))
-#        trn_all_predictions.loc[:,'t_nb_sess'] = trn_all_predictions[trn_feats].isnull().sum(axis=1)
+        trn_all_predictions.loc[:,'t_mean'] = np.log1p(trn_all_predictions[trn_feats].mean(axis=1)).astype('float32')
+        trn_all_predictions.loc[:,'t_median'] = np.log1p(trn_all_predictions[trn_feats].median(axis=1)).astype('float32')
+        trn_all_predictions.loc[:,'t_sum_log'] = np.log1p(trn_all_predictions[trn_feats]).sum(axis=1).astype('float32')
+        trn_all_predictions.loc[:,'t_sum_act'] = np.log1p(trn_all_predictions[trn_feats].fillna(0).sum(axis=1)).astype('float32')
+        trn_all_predictions.loc[:,'t_nb_sess'] = trn_all_predictions[trn_feats].isnull().sum(axis=1).astype('float32')
         train_df_agg = pd.concat([train_df_agg, trn_all_predictions], axis=1)
 
         # save pkl
@@ -218,6 +219,7 @@ def kfold_lightgbm(df, num_folds, stratified = False, debug= False, use_pkl=Fals
 
         test_df_agg = test_df[feats + ['fullVisitorId','totals.transactionRevenue', 'predictions']].groupby('fullVisitorId').agg(aggregations)
         test_df_agg.columns = pd.Index([e[0] + "_" + e[1].upper() for e in test_df_agg.columns.tolist()])
+        test_df_agg = test_df_agg.astype('float32')
 
         # Create a list of predictions for each Visitor
         with timer("Create a list of predictions for each Visitor"):
@@ -232,11 +234,11 @@ def kfold_lightgbm(df, num_folds, stratified = False, debug= False, use_pkl=Fals
         for f in trn_feats:
             if f not in sub_all_predictions.columns:
                 sub_all_predictions[f] = np.nan
-        sub_all_predictions.loc[:,'t_mean'] = np.log1p(sub_all_predictions[trn_feats].mean(axis=1))
-        sub_all_predictions.loc[:,'t_median'] = np.log1p(sub_all_predictions[trn_feats].median(axis=1))
-        sub_all_predictions.loc[:,'t_sum_log'] = np.log1p(sub_all_predictions[trn_feats]).sum(axis=1)
-        sub_all_predictions.loc[:,'t_sum_act'] = np.log1p(sub_all_predictions[trn_feats].fillna(0).sum(axis=1))
-#        sub_all_predictions.loc[:,'t_nb_sess'] = sub_all_predictions[trn_feats].isnull().sum(axis=1)
+        sub_all_predictions.loc[:,'t_mean'] = np.log1p(sub_all_predictions[trn_feats].mean(axis=1)).astype('float32')
+        sub_all_predictions.loc[:,'t_median'] = np.log1p(sub_all_predictions[trn_feats].median(axis=1)).astype('float32')
+        sub_all_predictions.loc[:,'t_sum_log'] = np.log1p(sub_all_predictions[trn_feats]).sum(axis=1).astype('float32')
+        sub_all_predictions.loc[:,'t_sum_act'] = np.log1p(sub_all_predictions[trn_feats].fillna(0).sum(axis=1)).astype('float32')
+        sub_all_predictions.loc[:,'t_nb_sess'] = sub_all_predictions[trn_feats].isnull().sum(axis=1).astype('float32')
         test_df_agg = pd.concat([test_df_agg, sub_all_predictions], axis=1)
 
         del sub_all_predictions, sub_pred_list, trn_feats

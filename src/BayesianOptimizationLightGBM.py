@@ -17,8 +17,8 @@ from Utils import NUM_FOLDS, EXCLUDED_FEATURES, read_pickles
 NUM_ROWS=None
 
 #DF = get_df(NUM_ROWS)
-#DF = loadpkl('../output/df.pkl')
-DF = read_pickles('../output/train_df_agg')
+DF = read_pickles('../output/df')
+#DF = read_pickles('../output/train_df_agg')
 
 # split test & train
 TRAIN_DF = DF[~DF['IS_TEST']]
@@ -92,7 +92,7 @@ def main():
 
     res = pd.DataFrame(clf_bo.res['max']['max_params'], index=['max_params'])
 
-    res.to_csv('../output/max_params_lgbm.csv')
+    res.to_csv('../output/max_params_lgbm_session.csv')
 
 if __name__ == '__main__':
     main()
