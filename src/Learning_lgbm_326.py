@@ -176,7 +176,7 @@ def kfold_lightgbm(df, num_folds, stratified = False, debug= False, use_pkl=Fals
 
     print('Starting User Level predictions...')
 
-    if False:
+    if use_pkl:
         # load pkl
         train_df_agg = read_pickles('../output/train_df_agg')
         test_df_agg = read_pickles('../output/test_df_agg')
@@ -184,7 +184,7 @@ def kfold_lightgbm(df, num_folds, stratified = False, debug= False, use_pkl=Fals
         # Aggregate data at User level
         aggregations = {'totals.transactionRevenue': ['sum']}
         for col in feats+['predictions']:
-            aggregations[col] = ['sum', 'max', 'min', 'mean']
+            aggregations[col] = ['sum']
 
         train_df_agg = train_df[feats+['fullVisitorId','totals.transactionRevenue', 'predictions']].groupby('fullVisitorId').agg(aggregations)
         train_df_agg.columns = pd.Index([e[0] + "_" + e[1].upper() for e in train_df_agg.columns.tolist()])
@@ -246,7 +246,7 @@ def kfold_lightgbm(df, num_folds, stratified = False, debug= False, use_pkl=Fals
         to_pickles(test_df_agg, '../output/test_df_agg', split_size=5, inplace=False)
 
     # Cross validation model
-    folds_agg = get_folds(df=train_df_agg[['totals.pageviews_MEAN']].reset_index(), n_splits=num_folds)
+    folds_agg = get_folds(df=train_df_agg[['totals.pageviews_SUM']].reset_index(), n_splits=num_folds)
 
     # Create arrays and dataframes to store results
     oof_preds_agg = np.zeros(train_df_agg.shape[0])

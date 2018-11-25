@@ -8,7 +8,7 @@ from sklearn.model_selection import KFold, StratifiedKFold
 
 from Preprocessing_326 import get_df
 from Learning_lgbm_326 import get_folds
-from Utils import NUM_FOLDS, EXCLUDED_FEATURES
+from Utils import NUM_FOLDS, EXCLUDED_FEATURES, read_pickles
 
 # 以下参考
 # https://github.com/fmfn/BayesianOptimization
@@ -16,8 +16,9 @@ from Utils import NUM_FOLDS, EXCLUDED_FEATURES
 
 NUM_ROWS=None
 
-DF = get_df(NUM_ROWS)
+#DF = get_df(NUM_ROWS)
 #DF = loadpkl('../output/df.pkl')
+DF = read_pickles('../output/train_df_agg')
 
 # split test & train
 TRAIN_DF = DF[~DF['IS_TEST']]
