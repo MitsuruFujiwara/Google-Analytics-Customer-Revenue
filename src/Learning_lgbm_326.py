@@ -176,7 +176,7 @@ def kfold_lightgbm(df, num_folds, stratified = False, debug= False, use_pkl=Fals
 
     print('Starting User Level predictions...')
 
-    if False:
+    if use_pkl:
         # load pkl
         train_df_agg = read_pickles('../output/train_df_agg')
         test_df_agg = read_pickles('../output/test_df_agg')

@@ -16,12 +16,10 @@ from Utils import NUM_FOLDS, EXCLUDED_FEATURES, read_pickles
 
 NUM_ROWS=None
 
-#DF = get_df(NUM_ROWS)
-DF = read_pickles('../output/df')
-#DF = read_pickles('../output/train_df_agg')
+TRAIN_DF = read_pickles('../output/train_df_agg')
 
 # split test & train
-TRAIN_DF = DF[~DF['IS_TEST']]
+#TRAIN_DF = DF[~DF['IS_TEST']]
 FEATS = [f for f in TRAIN_DF.columns if f not in EXCLUDED_FEATURES+['totals.transactionRevenue_SUM']]
 
 lgbm_train = lightgbm.Dataset(TRAIN_DF[FEATS],
@@ -41,7 +39,7 @@ def lgbm_eval(num_leaves,
               ):
 
     params = dict()
-    params["learning_rate"] = 0.02
+    params["learning_rate"] = 0.01
 #    params["silent"] = True
     params['device'] = 'gpu'
 #    params["nthread"] = 16
@@ -59,7 +57,7 @@ def lgbm_eval(num_leaves,
     params['min_data_in_leaf'] = int(min_data_in_leaf)
     params['verbose']=-1
 
-    folds = get_folds(df=TRAIN_DF, n_splits=NUM_FOLDS)
+    folds = get_folds(df=TRAIN_DF['totals.pageviews_MEAN'].reset_index(), n_splits=NUM_FOLDS)
 
     clf = lightgbm.cv(params=params,
                       train_set=lgbm_train,
@@ -88,11 +86,11 @@ def main():
                                               'min_data_in_leaf': (0, 500),
                                               })
 
-    clf_bo.maximize(init_points=15, n_iter=25)
+    clf_bo.maximize(init_points=30, n_iter=50)
 
     res = pd.DataFrame(clf_bo.res['max']['max_params'], index=['max_params'])
 
-    res.to_csv('../output/max_params_lgbm_session.csv')
+    res.to_csv('../output/max_params_lgbm_user.csv')
 
 if __name__ == '__main__':
     main()
