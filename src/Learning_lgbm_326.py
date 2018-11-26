@@ -114,14 +114,14 @@ def kfold_lightgbm(df, num_folds, stratified = False, debug= False, use_pkl=Fals
                 'metric': 'rmse',
                 'learning_rate': 0.01,
                 'num_leaves': 64,
-                'colsample_bytree': 0.553240348074409,
-                'subsample': 0.471522873020333,
+                'colsample_bytree': 0.769143040610826,
+                'subsample': 0.295302403483027,
                 'max_depth': 8,
-                'reg_alpha': 9.83318745912308,
-                'reg_lambda': 0.925142409255232,
-                'min_split_gain': 0.954402595384603,
+                'reg_alpha': 9.37961252311552,
+                'reg_lambda': 2.82500347706399,
+                'min_split_gain': 0.153268455490808,
                 'min_child_weight': 44,
-                'min_data_in_leaf': 79,
+                'min_data_in_leaf': 45,
                 'verbose': -1,
                 'seed':int(2**n_fold),
                 'bagging_seed':int(2**n_fold),
@@ -177,6 +177,10 @@ def kfold_lightgbm(df, num_folds, stratified = False, debug= False, use_pkl=Fals
     print('Starting User Level predictions...')
 
     if use_pkl:
+
+        del train_df, test_df
+        gc.collect()
+
         # load pkl
         train_df_agg = read_pickles('../output/train_df_agg')
         test_df_agg = read_pickles('../output/test_df_agg')

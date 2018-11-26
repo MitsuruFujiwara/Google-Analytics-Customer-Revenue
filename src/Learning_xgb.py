@@ -74,7 +74,7 @@ def kfold_xgboost(df, num_folds, stratified = False, debug= False, use_pkl=False
     print("Starting XGBoost. Train shape: {}, test shape: {}".format(train_df.shape, test_df.shape))
     del df
     gc.collect()
-
+    """
     ############################################################################
     # Session Level predictions
     ############################################################################
@@ -170,10 +170,14 @@ def kfold_xgboost(df, num_folds, stratified = False, debug= False, use_pkl=False
     ############################################################################
     # User Level predictions
     ############################################################################
-
+    """
     print('Starting User Level predictions...')
 
     if use_pkl:
+
+        del train_df, test_df
+        gc.collect()
+
         # load pkl
         train_df_agg = read_pickles('../output/train_df_agg_xgb')
         test_df_agg = read_pickles('../output/test_df_agg_xgb')
@@ -253,8 +257,11 @@ def kfold_xgboost(df, num_folds, stratified = False, debug= False, use_pkl=False
     feature_importance_df_agg = pd.DataFrame()
     feats_agg = [f for f in train_df_agg.columns if f not in EXCLUDED_FEATURES+['totals.transactionRevenue_SUM']]
 
+    # submit file生成用
+    test_df_agg_index = test_df_agg.index
+
     # final predict用にdmatrix形式のtest dfを作っておきます
-    test_df_dmtrx_agg = xgb.DMatrix(test_df_agg[feats_agg], label=train_df_agg['totals.transactionRevenue_SUM'])
+    test_df_agg = xgb.DMatrix(test_df_agg[feats_agg], label=test_df_agg['totals.transactionRevenue_SUM'])
 
     # k-fold
     for n_fold, (train_idx, valid_idx) in enumerate(folds_agg):
@@ -297,7 +304,7 @@ def kfold_xgboost(df, num_folds, stratified = False, debug= False, use_pkl=False
                         )
 
         oof_preds_agg[valid_idx] = np.expm1(reg.predict(xgb_test))
-        sub_preds_agg += np.expm1(reg.predict(test_df_dmtrx_agg)) / num_folds
+        sub_preds_agg += np.expm1(reg.predict(test_df_agg)) / num_folds
 
         fold_importance_df = pd.DataFrame.from_dict(reg.get_score(importance_type='gain'), orient='index', columns=['importance'])
         fold_importance_df["feature"] = fold_importance_df.index.tolist()
@@ -319,8 +326,9 @@ def kfold_xgboost(df, num_folds, stratified = False, debug= False, use_pkl=False
 
     if not debug:
         # 提出データの予測値を保存
-        test_df_agg.loc[:,'PredictedLogRevenue'] = sub_preds_agg
-        submission = test_df_agg[['PredictedLogRevenue']]
+        submission = pd.DataFrame()
+        submission['PredictedLogRevenue'] = sub_preds_agg
+        submission.index = test_df_agg_index
         submission['PredictedLogRevenue'] = np.log1p(submission['PredictedLogRevenue'])
         submission['PredictedLogRevenue'] =  submission['PredictedLogRevenue'].apply(lambda x : 0.0 if x < 0 else x)
         submission['PredictedLogRevenue'] = submission['PredictedLogRevenue'].fillna(0)

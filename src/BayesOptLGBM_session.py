@@ -8,7 +8,7 @@ from sklearn.model_selection import KFold, StratifiedKFold
 
 from Preprocessing_326 import get_df
 from Learning_lgbm_326 import get_folds
-from Utils import NUM_FOLDS, EXCLUDED_FEATURES, read_pickles
+from Utils import NUM_FOLDS, EXCLUDED_FEATURES, read_pickles, line_notify
 
 # 以下参考
 # https://github.com/fmfn/BayesianOptimization
@@ -96,6 +96,8 @@ def main():
     res = pd.DataFrame(clf_bo.res['max']['max_params'], index=['max_params'])
 
     res.to_csv('../output/max_params_lgbm_session.csv')
+
+    line_notify('lgbm session finished.')
 
 if __name__ == '__main__':
     main()

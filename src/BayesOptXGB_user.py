@@ -8,7 +8,7 @@ from sklearn.model_selection import KFold, StratifiedKFold
 
 from Preprocessing_326 import get_df
 from Learning_lgbm_326 import get_folds
-from Utils import NUM_FOLDS, EXCLUDED_FEATURES, read_pickles
+from Utils import NUM_FOLDS, EXCLUDED_FEATURES, read_pickles, line_notify
 
 # 以下参考
 # https://github.com/fmfn/BayesianOptimization
@@ -16,7 +16,7 @@ from Utils import NUM_FOLDS, EXCLUDED_FEATURES, read_pickles
 
 NUM_ROWS=None
 
-TRAIN_DF = read_pickles('../output/train_df_agg')
+TRAIN_DF = read_pickles('../output/train_df_agg_xgb')
 
 # split test & train
 #TRAIN_DF = DF[~DF['IS_TEST']]
@@ -89,6 +89,8 @@ def main():
     res = pd.DataFrame(reg_bo.res['max']['max_params'], index=['max_params'])
 
     res.to_csv('../output/max_params_xgb_user.csv')
+
+    line_notify('xgb user finished.')
 
 if __name__ == '__main__':
     main()
