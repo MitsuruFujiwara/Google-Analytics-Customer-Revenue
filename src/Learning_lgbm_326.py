@@ -138,6 +138,9 @@ def kfold_lightgbm(df, num_folds, stratified = False, debug= False, use_pkl=Fals
                         verbose_eval=100
                         )
 
+        # save model
+        reg.save_model('../output/models/lgbm_session_'+str(n_fold)+'.txt')
+
         oof_preds_session[valid_idx] = np.expm1(reg.predict(valid_x, num_iteration=reg.best_iteration))
         sub_preds_session += np.expm1(reg.predict(test_df[feats], num_iteration=reg.best_iteration)) / num_folds
 
@@ -176,7 +179,7 @@ def kfold_lightgbm(df, num_folds, stratified = False, debug= False, use_pkl=Fals
 
     print('Starting User Level predictions...')
 
-    if use_pkl:
+    if False:
 
         del train_df, test_df
         gc.collect()
@@ -282,15 +285,15 @@ def kfold_lightgbm(df, num_folds, stratified = False, debug= False, use_pkl=Fals
                 'objective': 'regression',
                 'metric': 'rmse',
                 'learning_rate': 0.01,
-                'num_leaves': 64,
-                'colsample_bytree': 0.553240348074409,
-                'subsample': 0.471522873020333,
+                'num_leaves': 20,
+                'colsample_bytree': 0.475475308818468,
+                'subsample': 0.179329509302646,
                 'max_depth': 8,
-                'reg_alpha': 9.83318745912308,
-                'reg_lambda': 0.925142409255232,
-                'min_split_gain': 0.954402595384603,
-                'min_child_weight': 44,
-                'min_data_in_leaf': 79,
+                'reg_alpha': 7.13938629665171,
+                'reg_lambda': 0.185775761904368,
+                'min_split_gain': 0.076096782481794,
+                'min_child_weight': 23,
+                'min_data_in_leaf': 4,
                 'verbose': -1,
                 'seed':int(2**n_fold),
                 'bagging_seed':int(2**n_fold),
@@ -306,6 +309,9 @@ def kfold_lightgbm(df, num_folds, stratified = False, debug= False, use_pkl=Fals
                         early_stopping_rounds= 200,
                         verbose_eval=100
                         )
+
+        # save model
+        reg.save_model('../output/models/lgbm_user_'+str(n_fold)+'.txt')
 
         oof_preds_agg[valid_idx] = np.expm1(reg.predict(valid_x, num_iteration=reg.best_iteration))
         sub_preds_agg += np.expm1(reg.predict(test_df_agg[feats_agg], num_iteration=reg.best_iteration)) / num_folds
@@ -343,8 +349,6 @@ def kfold_lightgbm(df, num_folds, stratified = False, debug= False, use_pkl=Fals
 
         # API経由でsubmit
         submit(submission_file_name, comment='cv: %.6f' % full_rmse_agg)
-
-    return feature_importance_df
 
 def main(debug=False, use_pkl=False):
     num_rows = 10000 if debug else None

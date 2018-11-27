@@ -74,7 +74,7 @@ def kfold_xgboost(df, num_folds, stratified = False, debug= False, use_pkl=False
     print("Starting XGBoost. Train shape: {}, test shape: {}".format(train_df.shape, test_df.shape))
     del df
     gc.collect()
-    """
+
     ############################################################################
     # Session Level predictions
     ############################################################################
@@ -111,14 +111,14 @@ def kfold_xgboost(df, num_folds, stratified = False, debug= False, use_pkl=False
                 'eval_metric':'rmse',
                 'silent':1,
                 'eta': 0.01,
-                'max_depth': 8,
-                'min_child_weight': 44,
-                'gamma': 0.5997057606,
-                'subsample': 0.6221326906,
-                'colsample_bytree': 0.6405879054,
-                'colsample_bylevel': 0.9772125093,
-                'alpha':9.83318745912308,
-                'lambda': 0.925142409255232,
+                'max_depth': 6,
+                'min_child_weight': 19,
+                'gamma': 0.479411416192221,
+                'subsample': 0.976329169063721,
+                'colsample_bytree': 0.921410871323335,
+                'colsample_bylevel': 0.603858358771505,
+                'alpha':9.86942860885701,
+                'lambda': 9.63581598065735,
                 'tree_method': 'gpu_hist', # GPU parameter
                 'predictor': 'gpu_predictor', # GPU parameter
                 'seed':int(2**n_fold)
@@ -132,6 +132,9 @@ def kfold_xgboost(df, num_folds, stratified = False, debug= False, use_pkl=False
                         early_stopping_rounds= 200,
                         verbose_eval=100
                         )
+
+        # save model
+        reg.save_model('../output/models/xgb_session_'+str(n_fold)+'.txt')
 
         oof_preds_session[valid_idx] = np.expm1(reg.predict(xgb_test))
         sub_preds_session += np.expm1(reg.predict(test_df_dmtrx)) / num_folds
@@ -170,7 +173,7 @@ def kfold_xgboost(df, num_folds, stratified = False, debug= False, use_pkl=False
     ############################################################################
     # User Level predictions
     ############################################################################
-    """
+
     print('Starting User Level predictions...')
 
     if use_pkl:
@@ -303,6 +306,9 @@ def kfold_xgboost(df, num_folds, stratified = False, debug= False, use_pkl=False
                         verbose_eval=100
                         )
 
+        # save model
+        reg.save_model('../output/models/xgb_user_'+str(n_fold)+'.txt')
+
         oof_preds_agg[valid_idx] = np.expm1(reg.predict(xgb_test))
         sub_preds_agg += np.expm1(reg.predict(test_df_agg)) / num_folds
 
@@ -340,8 +346,6 @@ def kfold_xgboost(df, num_folds, stratified = False, debug= False, use_pkl=False
 
         # API経由でsubmit
         submit(submission_file_name, comment='cv: %.6f' % full_rmse_agg)
-
-    return feature_importance_df
 
 def main(debug=False, use_pkl=False):
     num_rows = 10000 if debug else None
