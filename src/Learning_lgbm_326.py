@@ -179,7 +179,7 @@ def kfold_lightgbm(df, num_folds, stratified = False, debug= False, use_pkl=Fals
 
     print('Starting User Level predictions...')
 
-    if False:
+    if use_pkl:
 
         del train_df, test_df
         gc.collect()
@@ -191,67 +191,22 @@ def kfold_lightgbm(df, num_folds, stratified = False, debug= False, use_pkl=Fals
         # Aggregate data at User level
         aggregations = {'totals.transactionRevenue': ['sum']}
         for col in feats+['predictions']:
-            aggregations[col] = ['sum', 'max', 'min', 'mean', 'std']
+            aggregations[col] = ['sum', 'max', 'min', 'mean']
 
         train_df_agg = train_df[feats+['fullVisitorId','totals.transactionRevenue', 'predictions']].groupby('fullVisitorId').agg(aggregations)
-        train_df_agg.columns = pd.Index([e[0] + "_" + e[1].upper() for e in train_df_agg.columns.tolist()])
-        train_df_agg = train_df_agg.astype('float32')
-
-        # Create a list of predictions for each Visitor
-        with timer("Create a list of predictions for each Visitor"):
-            trn_pred_list = train_df[['fullVisitorId', 'predictions']].groupby('fullVisitorId')\
-                .apply(lambda df: list(df.predictions))\
-                .apply(lambda x: {'pred_'+str(i): pred for i, pred in enumerate(x)})
-
         del train_df
         gc.collect()
 
-        # Create a DataFrame with VisitorId as index
-        # trn_pred_list contains dict
-        # so creating a dataframe from it will expand dict values into columns
-        trn_all_predictions = pd.DataFrame(list(trn_pred_list.values), index=train_df_agg.index)
-        trn_feats = trn_all_predictions.columns
-        trn_all_predictions.loc[:,'t_mean'] = np.log1p(trn_all_predictions[trn_feats].mean(axis=1)).astype('float32')
-        trn_all_predictions.loc[:,'t_median'] = np.log1p(trn_all_predictions[trn_feats].median(axis=1)).astype('float32')
-        trn_all_predictions.loc[:,'t_sum_log'] = np.log1p(trn_all_predictions[trn_feats]).sum(axis=1).astype('float32')
-        trn_all_predictions.loc[:,'t_sum_act'] = np.log1p(trn_all_predictions[trn_feats].fillna(0).sum(axis=1)).astype('float32')
-        trn_all_predictions.loc[:,'t_nb_sess'] = trn_all_predictions[trn_feats].isnull().sum(axis=1).astype('float32')
-        train_df_agg = pd.concat([train_df_agg, trn_all_predictions], axis=1)
-
-        # save pkl
-        to_pickles(train_df_agg, '../output/train_df_agg', split_size=50, inplace=False)
-
-        del trn_all_predictions, trn_pred_list
-        gc.collect()
-
         test_df_agg = test_df[feats + ['fullVisitorId','totals.transactionRevenue', 'predictions']].groupby('fullVisitorId').agg(aggregations)
-        test_df_agg.columns = pd.Index([e[0] + "_" + e[1].upper() for e in test_df_agg.columns.tolist()])
-        test_df_agg = test_df_agg.astype('float32')
-
-        # Create a list of predictions for each Visitor
-        with timer("Create a list of predictions for each Visitor"):
-            sub_pred_list = test_df[['fullVisitorId', 'predictions']].groupby('fullVisitorId')\
-                .apply(lambda df: list(df.predictions))\
-                .apply(lambda x: {'pred_'+str(i): pred for i, pred in enumerate(x)})
-
         del test_df
         gc.collect()
 
-        sub_all_predictions = pd.DataFrame(list(sub_pred_list.values), index=test_df_agg.index)
-        for f in trn_feats:
-            if f not in sub_all_predictions.columns:
-                sub_all_predictions[f] = np.nan
-        sub_all_predictions.loc[:,'t_mean'] = np.log1p(sub_all_predictions[trn_feats].mean(axis=1)).astype('float32')
-        sub_all_predictions.loc[:,'t_median'] = np.log1p(sub_all_predictions[trn_feats].median(axis=1)).astype('float32')
-        sub_all_predictions.loc[:,'t_sum_log'] = np.log1p(sub_all_predictions[trn_feats]).sum(axis=1).astype('float32')
-        sub_all_predictions.loc[:,'t_sum_act'] = np.log1p(sub_all_predictions[trn_feats].fillna(0).sum(axis=1)).astype('float32')
-        sub_all_predictions.loc[:,'t_nb_sess'] = sub_all_predictions[trn_feats].isnull().sum(axis=1).astype('float32')
-        test_df_agg = pd.concat([test_df_agg, sub_all_predictions], axis=1)
-
-        del sub_all_predictions, sub_pred_list, trn_feats
-        gc.collect()
+        # change columns name
+        train_df_agg.columns = pd.Index([e[0] + "_" + e[1].upper() for e in train_df_agg.columns.tolist()])
+        test_df_agg.columns = pd.Index([e[0] + "_" + e[1].upper() for e in test_df_agg.columns.tolist()])
 
         # save pkl
+        to_pickles(train_df_agg, '../output/train_df_agg', split_size=50, inplace=False)
         to_pickles(test_df_agg, '../output/test_df_agg', split_size=5, inplace=False)
 
     # Cross validation model
@@ -285,15 +240,15 @@ def kfold_lightgbm(df, num_folds, stratified = False, debug= False, use_pkl=Fals
                 'objective': 'regression',
                 'metric': 'rmse',
                 'learning_rate': 0.01,
-                'num_leaves': 20,
-                'colsample_bytree': 0.475475308818468,
-                'subsample': 0.179329509302646,
+                'num_leaves': 64,
+                'colsample_bytree': 0.553240348074409,
+                'subsample': 0.471522873020333,
                 'max_depth': 8,
-                'reg_alpha': 7.13938629665171,
-                'reg_lambda': 0.185775761904368,
-                'min_split_gain': 0.076096782481794,
-                'min_child_weight': 23,
-                'min_data_in_leaf': 4,
+                'reg_alpha': 9.83318745912308,
+                'reg_lambda': 0.925142409255232,
+                'min_split_gain': 0.954402595384603,
+                'min_child_weight': 44,
+                'min_data_in_leaf': 79,
                 'verbose': -1,
                 'seed':int(2**n_fold),
                 'bagging_seed':int(2**n_fold),
@@ -363,4 +318,4 @@ if __name__ == "__main__":
     submission_file_name = "../output/submission_lgbm.csv"
     oof_file_name = "../output/oof_lgbm.csv"
     with timer("Full model run"):
-        main(debug=False, use_pkl=True)
+        main(debug=False, use_pkl=False)
