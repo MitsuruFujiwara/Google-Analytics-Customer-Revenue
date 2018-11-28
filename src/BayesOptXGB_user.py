@@ -23,8 +23,8 @@ TRAIN_DF = read_pickles('../output/train_df_agg_xgb')
 FEATS = [f for f in TRAIN_DF.columns if f not in EXCLUDED_FEATURES+['totals.transactionRevenue_SUM']]
 
 xgb_train = xgboost.DMatrix(TRAIN_DF[FEATS],
-                        np.log1p(TRAIN_DF['totals.transactionRevenue_SUM'])
-                        )
+                            np.log1p(TRAIN_DF['totals.transactionRevenue_SUM'])
+                            )
 
 del TRAIN_DF
 gc.collect()
