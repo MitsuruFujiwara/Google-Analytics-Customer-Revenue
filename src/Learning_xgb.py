@@ -176,7 +176,7 @@ def kfold_xgboost(df, num_folds, stratified = False, debug= False, use_pkl=False
 
     print('Starting User Level predictions...')
 
-    if False:
+    if use_pkl:
 
         del train_df, test_df
         gc.collect()
@@ -198,11 +198,16 @@ def kfold_xgboost(df, num_folds, stratified = False, debug= False, use_pkl=False
         del test_df
         gc.collect()
 
+        # reshape header
         train_df_agg.columns = pd.Index([e[0] + "_" + e[1].upper() for e in train_df_agg.columns.tolist()])
         test_df_agg.columns = pd.Index([e[0] + "_" + e[1].upper() for e in test_df_agg.columns.tolist()])
 
+        # to float32
+        train_df_agg=train_df_agg.astype('float32')
+        test_df_agg=test_df_agg.astype('float32')
+
         # save pkl
-        to_pickles(train_df_agg, '../output/train_df_agg_xgb', split_size=5, inplace=False)
+        to_pickles(train_df_agg, '../output/train_df_agg_xgb', split_size=50, inplace=False)
         to_pickles(test_df_agg, '../output/test_df_agg_xgb', split_size=5, inplace=False)
 
     # Cross validation model
@@ -231,7 +236,7 @@ def kfold_xgboost(df, num_folds, stratified = False, debug= False, use_pkl=False
         xgb_test = xgb.DMatrix(valid_x,
                                label=valid_y)
 
-        # params
+        # gridsearchできないのでlightgbmと同じparamsを使います
         params = {
                 'objective':'gpu:reg:linear', # GPU parameter
                 'booster': 'gbtree',
@@ -239,13 +244,13 @@ def kfold_xgboost(df, num_folds, stratified = False, debug= False, use_pkl=False
                 'silent':1,
                 'eta': 0.01,
                 'max_depth': 8,
-                'min_child_weight': 44,
-                'gamma': 0.5997057606,
-                'subsample': 0.6221326906,
-                'colsample_bytree': 0.6405879054,
-                'colsample_bylevel': 0.9772125093,
-                'alpha':9.83318745912308,
-                'lambda': 0.925142409255232,
+                'min_child_weight': 15,
+                'gamma': 0.631115489088361,
+                'subsample': 0.702214902667035,
+                'colsample_bytree': 0.174047605805866,
+#                'colsample_bylevel': 0.631115489088361,
+                'alpha':9.91242460129322,
+                'lambda': 0.357672819483952,
                 'tree_method': 'gpu_hist', # GPU parameter
                 'predictor': 'gpu_predictor', # GPU parameter
                 'seed':int(2**n_fold)
@@ -296,7 +301,7 @@ def kfold_xgboost(df, num_folds, stratified = False, debug= False, use_pkl=False
 
         # out of foldの予測値を保存
         train_df_agg['OOF_PRED'] = oof_preds_agg
-        train_df_agg[['OOF_PRED']].to_csv(oof_file_name, index= True)
+        train_df_agg[['OOF_PRED', 'totals.transactionRevenue_SUM']].to_csv(oof_file_name, index= True)
 
         # API経由でsubmit
         submit(submission_file_name, comment='cv: %.6f' % full_rmse_agg)
@@ -314,4 +319,4 @@ if __name__ == "__main__":
     submission_file_name = "../output/submission_xgb.csv"
     oof_file_name = "../output/oof_xgb.csv"
     with timer("Full model run"):
-        main(debug=False, use_pkl=True)
+        main(debug=False, use_pkl=False)

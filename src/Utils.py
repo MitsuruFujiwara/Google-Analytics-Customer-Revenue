@@ -24,7 +24,7 @@ import gc
 Utility的なものを置いとくところ
 '''
 
-NUM_FOLDS = 5
+NUM_FOLDS = 10
 
 COMPETITION_NAME = 'ga-customer-revenue-prediction'
 

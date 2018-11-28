@@ -5,56 +5,44 @@ import numpy as np
 import pandas as pd
 import gc
 
-from Utils import line_notify, NUM_FOLDS
+from Utils import line_notify, submit, rmse
 
 ################################################################################
 # 複数モデルのoutputをブレンドして最終的なsubmitファイルを生成するスクリプト。
 ################################################################################
 
-def main(debug = False):
-    num_rows = 10000 if debug else None
-    # load submission file
-    sub = pd.read_csv('../input/index_master.csv')
-    sub['高低左'] = 0.0
+def main():
 
-    for route in ['A', 'B', 'C', 'D']:
-        # load df for each route
-        df = train_test(route, num_rows)
+    # submitファイルをロード
+    sub = pd.read_csv("../input/sample_submission_v2.csv",dtype={'fullVisitorId': str})
+    sub_lgbm = pd.read_csv("../output/submission_lgbm.csv",dtype={'fullVisitorId': str})
+    sub_xgb = pd.read_csv("../output/submission_xgb.csv",dtype={'fullVisitorId': str})
 
-        # Divide in training/validation and test data
-        test_df = df[df['高低左'].isnull()]
-        print("Starting Route {} Prediction. test shape: {}".format(route, test_df.shape))
+    # merge
+    sub['lgbm'] = np.expm1(sub_lgbm['PredictedLogRevenue'])
+    sub['xgb'] = np.expm1(sub_xgb['PredictedLogRevenue'])
+    sub.loc[:,'PredictedLogRevenue'] = np.log1p(0.5*sub['lgbm']+0.5*sub['xgb'])
 
-        del df
-        gc.collect()
+    del sub_lgbm, sub_xgb
+    gc.collect()
 
-        sub_preds = np.zeros(test_df.shape[0])
-        feats = [f for f in test_df.columns if f not in ['id', 'date', 'キロ程', '高低左']]
-        for n_fold in range(NUM_FOLDS):
-            # load model
-            reg = lgb.Booster(model_file='../output/lgbm_'+route+'_'+str(n_fold)+'.txt')
+    # out of foldの予測値をロード
+    oof_lgbm = pd.read_csv("../output/oof_lgbm.csv",dtype={'fullVisitorId': str})
+    oof_xgb = pd.read_csv("../output/oof_xgb.csv",dtype={'fullVisitorId': str})
+    oof = 0.5*oof_lgbm['OOF_PRED']+0.5*oof_xgb['OOF_PRED']
 
-            # prediction
-            sub_preds += reg.predict(test_df[feats], num_iteration=reg.best_iteration) / NUM_FOLDS
-            print('Route {} fold {} finished'.format(route, n_fold+1))
+    # local cv scoreを算出
+    local_rmse = rmse(np.log1p(oof_lgbm['totals.transactionRevenue_SUM']), np.log1p(oof))
 
-            del reg
-            gc.collect()
+    del oof_lgbm, oof_xgb
+    gc.collect()
 
-        # 提出データの予測値を保存
-        sub.loc[sub['路線']==route,'高低左'] = sub_preds
+    # save submit file
+    sub[['fullVisitorId', 'PredictedLogRevenue']].to_csv(submission_file_name, index=False)
 
-        # LINE通知
-        line_notify("Finished Route {} Prediction.".format(route))
-
-        del sub_preds, test_df
-        gc.collect()
-
-    sub['高低左'].to_csv(submission_file_name, header=False)
-
-    # LINE通知
-    line_notify('Saved {}'.format(submission_file_name))
+    # submit
+    submit(submission_file_name, comment='cv: %.6f' % local_rmse)
 
 if __name__ == '__main__':
-    submission_file_name = "../output/submission.csv"
-    main(debug=False)
+    submission_file_name = "../output/submission_blend.csv"
+    main()

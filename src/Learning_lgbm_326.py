@@ -201,9 +201,13 @@ def kfold_lightgbm(df, num_folds, stratified = False, debug= False, use_pkl=Fals
         del test_df
         gc.collect()
 
-        # change columns name
+        # reshape header
         train_df_agg.columns = pd.Index([e[0] + "_" + e[1].upper() for e in train_df_agg.columns.tolist()])
         test_df_agg.columns = pd.Index([e[0] + "_" + e[1].upper() for e in test_df_agg.columns.tolist()])
+
+        # to float32
+        train_df_agg=train_df_agg.astype('float32')
+        test_df_agg=test_df_agg.astype('float32')
 
         # save pkl
         to_pickles(train_df_agg, '../output/train_df_agg', split_size=50, inplace=False)
@@ -231,7 +235,7 @@ def kfold_lightgbm(df, num_folds, stratified = False, debug= False, use_pkl=Fals
                                label=valid_y,
                                free_raw_data=False)
 
-        # パラメータは適当です
+        # params estimated by bayesian opt
         params ={
                 'device' : 'gpu',
 #                'gpu_use_dp':True,
@@ -300,7 +304,7 @@ def kfold_lightgbm(df, num_folds, stratified = False, debug= False, use_pkl=Fals
 
         # out of foldの予測値を保存
         train_df_agg['OOF_PRED'] = oof_preds_agg
-        train_df_agg[['OOF_PRED']].to_csv(oof_file_name, index= True)
+        train_df_agg[['OOF_PRED', 'totals.transactionRevenue_SUM']].to_csv(oof_file_name, index= True)
 
         # API経由でsubmit
         submit(submission_file_name, comment='cv: %.6f' % full_rmse_agg)
