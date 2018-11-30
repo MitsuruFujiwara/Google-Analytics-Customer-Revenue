@@ -24,11 +24,11 @@ def preprocessing_categorical(df):
     return df
 
 # mainの処理
-def get_df(num_rows=None):
+def get_df(num_rows=None, path_train='../input/train_v2.csv', path_test='../input/test_v2.csv'):
     print("Loading datasets...")
     # load datasets
-    train_df = load_df('../input/train_v2.csv', num_rows)
-    test_df = load_df('../input/test_v2.csv', num_rows)
+    train_df = load_df(path_train, num_rows)
+    test_df = load_df(path_test, num_rows)
     print("Train samples: {}, test samples: {}".format(len(train_df), len(test_df)))
 
     # train testの識別用
