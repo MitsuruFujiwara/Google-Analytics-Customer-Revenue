@@ -50,7 +50,7 @@ def predict_lgbm(df, submission_file_name_lgbm):
         # prediction
         sub_preds_session += np.expm1(reg.predict(test_df[feats], num_iteration=reg.best_iteration)) / NUM_FOLDS
 
-        print('Session Level prediction fold {} done.'.format(n_fold))
+        print('Session Level prediction fold {} done.'.format(n_fold+1))
 
         del reg
         gc.collect()
@@ -89,7 +89,7 @@ def predict_lgbm(df, submission_file_name_lgbm):
         # prediction
         sub_preds_agg += np.expm1(reg.predict(test_df_agg[feats_agg], num_iteration=reg.best_iteration)) / NUM_FOLDS
 
-        print('User Level prediction fold {} done.'.format(n_fold))
+        print('User Level prediction fold {} done.'.format(n_fold+1))
 
         del reg
         gc.collect()
@@ -133,7 +133,7 @@ def predict_xgb(df, submission_file_name_xgb):
         # prediction
         sub_preds_session += np.expm1(reg.predict(test_df_dmtrx)) / NUM_FOLDS
 
-        print('Session Level prediction fold {} done.'.format(n_fold))
+        print('Session Level prediction fold {} done.'.format(n_fold+1))
 
         del reg
         gc.collect()
@@ -174,7 +174,7 @@ def predict_xgb(df, submission_file_name_xgb):
         # prediction
         sub_preds_agg += np.expm1(reg.predict(test_df_dmtrx_agg)) / NUM_FOLDS
 
-        print('User Level prediction fold {} done.'.format(n_fold))
+        print('User Level prediction fold {} done.'.format(n_fold+1))
 
         del reg
         gc.collect()
@@ -227,11 +227,13 @@ if __name__ == '__main__':
     submission_file_name = "../output/submission_blend.csv"
     submission_file_name_lgbm ="../output/submission_lgbm_pred.csv"
     submission_file_name_xgb ="../output/submission_xgb_pred.csv"
+    """
     with timer("Preprocessing"):
         df = get_df(num_rows=None)
     with timer("LightGBM prediction"):
         predict_lgbm(df, submission_file_name_lgbm)
     with timer("XGBoost prediction"):
         predict_lgbm(df, submission_file_name_xgb)
-#    with timer("Blend prediction"):
-#        main(df, submission_file_name_xgb)
+    """
+    with timer("Blend prediction"):
+        main()
